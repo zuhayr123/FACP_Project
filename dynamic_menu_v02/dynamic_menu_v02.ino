@@ -18,8 +18,7 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 // LCD setup
 LiquidCrystal_I2C lcd(0x27, 16, 2); // Set the LCD I2C address
 
-enum MenuState { MAIN_MENU, INPUT_CONFIG, ZONE_SETTING, ZONE_1, ZONE_2, ZONE_3, ZONE_4, PRESSURE_SWITCH_CONFIG, RAC_1, RAC_2, OUTPUT_CONFIG, RAC_SETTING, RAC_1_SETTING };
-
+enum MenuState { MAIN_MENU, INPUT_CONFIG, ZONE_SETTING, ZONE_1, ZONE_2, ZONE_3, ZONE_4, PRESSURE_SWITCH_CONFIG, RAC_1, RAC_2, OUTPUT_CONFIG, RAC_SETTING, RAC_1_SETTING, RAC_2_SETTING };
 
 MenuState currentMenu = MAIN_MENU;
 
@@ -66,6 +65,13 @@ void rac1SettingZ1orZ2();
 void rac1SettingZ1();
 void rac1SettingZ2();
 
+// Forward declarations for new action functions
+void goToRAC2Setting();
+void rac2SettingZ3Z4();
+void rac2SettingZ3orZ4();
+void rac2SettingZ3();
+void rac2SettingZ4();
+
 // Extend the inputConfigItems array
 MenuItem inputConfigItems[] = {{"Zone Setting", goToZoneSetting}, {"Pressure Switch Config", goToPressureSwitchConfig}};
 const int inputConfigSize = sizeof(inputConfigItems) / sizeof(MenuItem);
@@ -100,11 +106,14 @@ MenuItem zone4Items[] = {{"Location", zone4Location}, {"Enable/Disable", zone4En
 MenuItem outputConfigItems[] = {{"RAC Setting", goToRACSetting}};
 const int outputConfigSize = sizeof(outputConfigItems) / sizeof(MenuItem);
 
-MenuItem racSettingItems[] = {{"RAC 1 Setting", goToRAC1Setting}};
+MenuItem racSettingItems[] = {{"RAC 1 Setting", goToRAC1Setting}, {"RAC 2 Setting", goToRAC2Setting}};
 const int racSettingSize = sizeof(racSettingItems) / sizeof(MenuItem);
 
 MenuItem rac1SettingItems[] = {{"Z1 & Z2", rac1SettingZ1Z2}, {"Z1 or Z2", rac1SettingZ1orZ2}, {"Z1", rac1SettingZ1}, {"Z2", rac1SettingZ2}};
 const int rac1SettingSize = sizeof(rac1SettingItems) / sizeof(MenuItem);
+
+MenuItem rac2SettingItems[] = {{"Z3 & Z4", rac2SettingZ3Z4}, {"Z3 or Z4", rac2SettingZ3orZ4}, {"Z3", rac2SettingZ3}, {"Z4", rac2SettingZ4}};
+const int rac2SettingSize = sizeof(rac2SettingItems) / sizeof(MenuItem);
 
 const int mainMenuSize = sizeof(mainMenuItems) / sizeof(MenuItem);
 const int zoneSettingSize = sizeof(zoneSettingItems) / sizeof(MenuItem);
@@ -148,6 +157,18 @@ void goToRAC1Setting() {
   currentMenu = RAC_1_SETTING;
   currentIndex = 0;
 }
+
+void goToRAC2Setting() {
+  pushMenu(currentMenu);
+  currentMenu = RAC_2_SETTING;
+  currentIndex = 0;
+}
+
+// Implement the action functions for RAC 2 Settings
+void rac2SettingZ3Z4() { /* Implement Action */ }
+void rac2SettingZ3orZ4() { /* Implement Action */ }
+void rac2SettingZ3() { /* Implement Action */ }
+void rac2SettingZ4() { /* Implement Action */ }
 
 // Implement the action functions for RAC 1 Settings
 void rac1SettingZ1Z2() { /* Implement Action */ }
@@ -244,6 +265,9 @@ void handleKeyPress(char key) {
     case RAC_1_SETTING:
       navigateMenu(rac1SettingItems, rac1SettingSize, key);
       break;
+    case RAC_2_SETTING:
+      navigateMenu(rac2SettingItems, rac2SettingSize, key);
+      break;
     // ... other cases
   }
 }
@@ -288,6 +312,9 @@ void updateDisplay() {
       break;
     case RAC_1_SETTING:
       displayMenu(rac1SettingItems, rac1SettingSize);
+      break;
+    case RAC_2_SETTING:
+      displayMenu(rac2SettingItems, rac2SettingSize);
       break;
     // ... other cases
   }
