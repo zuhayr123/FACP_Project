@@ -18,7 +18,8 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 // LCD setup
 LiquidCrystal_I2C lcd(0x27, 16, 2); // Set the LCD I2C address
 
-enum MenuState { MAIN_MENU, INPUT_CONFIG, ZONE_SETTING, ZONE_1, ZONE_2, ZONE_3, ZONE_4, PRESSURE_SWITCH_CONFIG, RAC_1, RAC_2 };
+enum MenuState { MAIN_MENU, INPUT_CONFIG, ZONE_SETTING, ZONE_1, ZONE_2, ZONE_3, ZONE_4, PRESSURE_SWITCH_CONFIG, RAC_1, RAC_2, OUTPUT_CONFIG, RAC_SETTING, RAC_1_SETTING };
+
 
 MenuState currentMenu = MAIN_MENU;
 
@@ -56,6 +57,15 @@ void goToRAC2();
 void rac1Switch();
 void rac2Switch();
 
+// Forward declarations for new action functions
+void goToOutputConfig();
+void goToRACSetting();
+void goToRAC1Setting();
+void rac1SettingZ1Z2();
+void rac1SettingZ1orZ2();
+void rac1SettingZ1();
+void rac1SettingZ2();
+
 // Extend the inputConfigItems array
 MenuItem inputConfigItems[] = {{"Zone Setting", goToZoneSetting}, {"Pressure Switch Config", goToPressureSwitchConfig}};
 const int inputConfigSize = sizeof(inputConfigItems) / sizeof(MenuItem);
@@ -80,16 +90,23 @@ void rac1Switch() { /* Implement RAC 1 Switch Action */ }
 void rac2Switch() { /* Implement RAC 2 Switch Action */ }
 
 
-MenuItem mainMenuItems[] = {{"Input Config", goToInputConfig}};
-//MenuItem inputConfigItems[] = {{"Zone Setting", goToZoneSetting}};
+MenuItem mainMenuItems[] = {{"Input Config", goToInputConfig}, {"Output Config", goToOutputConfig}};
 MenuItem zoneSettingItems[] = {{"Zone 1", goToZone1}, {"Zone 2", goToZone2}, {"Zone 3", goToZone3}, {"Zone 4", goToZone4}};
 MenuItem zone1Items[] = {{"Location", zone1Location}, {"Enable/Disable", zone1EnableDisable}};
 MenuItem zone2Items[] = {{"Location", zone2Location}, {"Enable/Disable", zone2EnableDisable}};
 MenuItem zone3Items[] = {{"Location", zone3Location}, {"Enable/Disable", zone3EnableDisable}};
 MenuItem zone4Items[] = {{"Location", zone4Location}, {"Enable/Disable", zone4EnableDisable}};
 
+MenuItem outputConfigItems[] = {{"RAC Setting", goToRACSetting}};
+const int outputConfigSize = sizeof(outputConfigItems) / sizeof(MenuItem);
+
+MenuItem racSettingItems[] = {{"RAC 1 Setting", goToRAC1Setting}};
+const int racSettingSize = sizeof(racSettingItems) / sizeof(MenuItem);
+
+MenuItem rac1SettingItems[] = {{"Z1 & Z2", rac1SettingZ1Z2}, {"Z1 or Z2", rac1SettingZ1orZ2}, {"Z1", rac1SettingZ1}, {"Z2", rac1SettingZ2}};
+const int rac1SettingSize = sizeof(rac1SettingItems) / sizeof(MenuItem);
+
 const int mainMenuSize = sizeof(mainMenuItems) / sizeof(MenuItem);
-//const int inputConfigSize = sizeof(inputConfigItems) / sizeof(MenuItem);
 const int zoneSettingSize = sizeof(zoneSettingItems) / sizeof(MenuItem);
 const int zone1Size = sizeof(zone1Items) / sizeof(MenuItem);
 const int zone2Size = sizeof(zone2Items) / sizeof(MenuItem);
@@ -113,6 +130,30 @@ void goToZoneSetting() {
   currentMenu = ZONE_SETTING;
   currentIndex = 0;
 }
+
+void goToOutputConfig() {
+  pushMenu(currentMenu);
+  currentMenu = OUTPUT_CONFIG;
+  currentIndex = 0;
+}
+
+void goToRACSetting() {
+  pushMenu(currentMenu);
+  currentMenu = RAC_SETTING;
+  currentIndex = 0;
+}
+
+void goToRAC1Setting() {
+  pushMenu(currentMenu);
+  currentMenu = RAC_1_SETTING;
+  currentIndex = 0;
+}
+
+// Implement the action functions for RAC 1 Settings
+void rac1SettingZ1Z2() { /* Implement Action */ }
+void rac1SettingZ1orZ2() { /* Implement Action */ }
+void rac1SettingZ1() { /* Implement Action */ }
+void rac1SettingZ2() { /* Implement Action */ }
 
 void goToZone1() { pushMenu(currentMenu); currentMenu = ZONE_1; currentIndex = 0; }
 void goToZone2() { pushMenu(currentMenu); currentMenu = ZONE_2; currentIndex = 0; }
@@ -194,6 +235,15 @@ void handleKeyPress(char key) {
     case RAC_2:
       navigateMenu(rac2Items, rac2Size, key);
       break;
+    case OUTPUT_CONFIG:
+      navigateMenu(outputConfigItems, outputConfigSize, key);
+      break;
+    case RAC_SETTING:
+      navigateMenu(racSettingItems, racSettingSize, key);
+      break;
+    case RAC_1_SETTING:
+      navigateMenu(rac1SettingItems, rac1SettingSize, key);
+      break;
     // ... other cases
   }
 }
@@ -229,6 +279,15 @@ void updateDisplay() {
       break;
     case RAC_2:
       displayMenu(rac2Items, rac2Size);
+      break;
+    case OUTPUT_CONFIG:
+      displayMenu(outputConfigItems, outputConfigSize);
+      break;
+    case RAC_SETTING:
+      displayMenu(racSettingItems, racSettingSize);
+      break;
+    case RAC_1_SETTING:
+      displayMenu(rac1SettingItems, rac1SettingSize);
       break;
     // ... other cases
   }
