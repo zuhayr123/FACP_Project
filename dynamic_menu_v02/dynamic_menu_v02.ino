@@ -22,8 +22,10 @@ enum MenuState {
     MAIN_MENU, INPUT_CONFIG, ZONE_SETTING, ZONE_1, ZONE_2, ZONE_3, ZONE_4, 
     PRESSURE_SWITCH_CONFIG, RAC_1, RAC_2, 
     OUTPUT_CONFIG, RAC_SETTING, RAC_1_SETTING, RAC_2_SETTING, 
-    NAC_SETTING, NAC_1_SETTING, NAC_2_SETTING 
+    NAC_SETTING, NAC_1_SETTING, NAC_2_SETTING, 
+    RELAY_SETTING, RELAY_1_SETTING, RELAY_2_SETTING
 };
+
 
 
 
@@ -90,6 +92,17 @@ void goToNAC2Setting();
 void nac2SettingRAC2();
 void nac2SettingCommonNAC2();
 
+// Forward declarations for new action functions
+void goToRelaySetting();
+void goToRelay1Setting();
+void goToRelay2Setting();
+void relay1SettingZ1();
+void relay1SettingZ2();
+void relay1SettingZ1Z2();
+void relay2SettingZ3();
+void relay2SettingZ4();
+void relay2SettingZ3Z4();
+
 // Extend the inputConfigItems array
 MenuItem inputConfigItems[] = {{"Zone Setting", goToZoneSetting}, {"Pressure Switch Config", goToPressureSwitchConfig}};
 const int inputConfigSize = sizeof(inputConfigItems) / sizeof(MenuItem);
@@ -121,7 +134,7 @@ MenuItem zone2Items[] = {{"Location", zone2Location}, {"Enable/Disable", zone2En
 MenuItem zone3Items[] = {{"Location", zone3Location}, {"Enable/Disable", zone3EnableDisable}};
 MenuItem zone4Items[] = {{"Location", zone4Location}, {"Enable/Disable", zone4EnableDisable}};
 
-MenuItem outputConfigItems[] = {{"RAC Setting", goToRACSetting}, {"NAC Setting", goToNACSetting}};
+MenuItem outputConfigItems[] = {{"RAC Setting", goToRACSetting}, {"NAC Setting", goToNACSetting}, {"Relay Setting", goToRelaySetting}};
 const int outputConfigSize = sizeof(outputConfigItems) / sizeof(MenuItem);
 
 MenuItem racSettingItems[] = {{"RAC 1 Setting", goToRAC1Setting}, {"RAC 2 Setting", goToRAC2Setting}};
@@ -141,6 +154,15 @@ const int nac2SettingSize = sizeof(nac2SettingItems) / sizeof(MenuItem);
 
 MenuItem nac1SettingItems[] = {{"RAC 1", nac1SettingRAC1}, {"Common", nac1SettingCommon}};
 const int nac1SettingSize = sizeof(nac1SettingItems) / sizeof(MenuItem);
+
+MenuItem relaySettingItems[] = {{"Relay 1 Setting", goToRelay1Setting}, {"Relay 2 Setting", goToRelay2Setting}};
+const int relaySettingSize = sizeof(relaySettingItems) / sizeof(MenuItem);
+
+MenuItem relay1SettingItems[] = {{"Z1", relay1SettingZ1}, {"Z2", relay1SettingZ2}, {"Z1 & Z2", relay1SettingZ1Z2}};
+const int relay1SettingSize = sizeof(relay1SettingItems) / sizeof(MenuItem);
+
+MenuItem relay2SettingItems[] = {{"Z3", relay2SettingZ3}, {"Z4", relay2SettingZ4}, {"Z3 & Z4", relay2SettingZ3Z4}};
+const int relay2SettingSize = sizeof(relay2SettingItems) / sizeof(MenuItem);
 
 const int mainMenuSize = sizeof(mainMenuItems) / sizeof(MenuItem);
 const int zoneSettingSize = sizeof(zoneSettingItems) / sizeof(MenuItem);
@@ -208,6 +230,23 @@ void goToNAC2Setting() {
   currentMenu = NAC_2_SETTING;
   currentIndex = 0;
 }
+
+void goToRelaySetting() {
+  pushMenu(currentMenu);
+  currentMenu = RELAY_SETTING;
+  currentIndex = 0;
+}
+
+void goToRelay1Setting() { pushMenu(currentMenu); currentMenu = RELAY_1_SETTING; currentIndex = 0; }
+void goToRelay2Setting() { pushMenu(currentMenu); currentMenu = RELAY_2_SETTING; currentIndex = 0; }
+
+// Implement the action functions for Relay 1 and Relay 2 Settings
+void relay1SettingZ1() { /* Implement Action */ }
+void relay1SettingZ2() { /* Implement Action */ }
+void relay1SettingZ1Z2() { /* Implement Action */ }
+void relay2SettingZ3() { /* Implement Action */ }
+void relay2SettingZ4() { /* Implement Action */ }
+void relay2SettingZ3Z4() { /* Implement Action */ }
 
 // Implement the action functions for NAC 2 Settings
 void nac2SettingRAC2() { /* Implement Action for NAC 2 - RAC 2 */ }
@@ -330,6 +369,15 @@ void handleKeyPress(char key) {
     case NAC_2_SETTING:
       navigateMenu(nac2SettingItems, nac2SettingSize, key);
       break;
+    case RELAY_SETTING:
+      navigateMenu(relaySettingItems, relaySettingSize, key);
+      break;
+    case RELAY_1_SETTING:
+      navigateMenu(relay1SettingItems, relay1SettingSize, key);
+      break;
+    case RELAY_2_SETTING:
+      navigateMenu(relay2SettingItems, relay2SettingSize, key);
+      break;
     // ... other cases
   }
 }
@@ -386,6 +434,15 @@ void updateDisplay() {
       break;
     case NAC_2_SETTING:
       displayMenu(nac2SettingItems, nac2SettingSize);
+      break;
+    case RELAY_SETTING:
+      displayMenu(relaySettingItems, relaySettingSize);
+      break;
+    case RELAY_1_SETTING:
+      displayMenu(relay1SettingItems, relay1SettingSize);
+      break;
+    case RELAY_2_SETTING:
+      displayMenu(relay2SettingItems, relay2SettingSize);
       break;
     // ... other cases
   }
