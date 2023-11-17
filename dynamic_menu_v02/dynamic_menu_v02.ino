@@ -18,7 +18,14 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 // LCD setup
 LiquidCrystal_I2C lcd(0x27, 16, 2); // Set the LCD I2C address
 
-enum MenuState { MAIN_MENU, INPUT_CONFIG, ZONE_SETTING, ZONE_1, ZONE_2, ZONE_3, ZONE_4, PRESSURE_SWITCH_CONFIG, RAC_1, RAC_2, OUTPUT_CONFIG, RAC_SETTING, RAC_1_SETTING, RAC_2_SETTING };
+enum MenuState { 
+    MAIN_MENU, INPUT_CONFIG, ZONE_SETTING, ZONE_1, ZONE_2, ZONE_3, ZONE_4, 
+    PRESSURE_SWITCH_CONFIG, RAC_1, RAC_2, 
+    OUTPUT_CONFIG, RAC_SETTING, RAC_1_SETTING, RAC_2_SETTING, 
+    NAC_SETTING, NAC_1_SETTING, NAC_2_SETTING 
+};
+
+
 
 MenuState currentMenu = MAIN_MENU;
 
@@ -72,6 +79,17 @@ void rac2SettingZ3orZ4();
 void rac2SettingZ3();
 void rac2SettingZ4();
 
+// Forward declarations for new action functions
+void goToNACSetting();
+void goToNAC1Setting();
+void nac1SettingRAC1();
+void nac1SettingCommon();
+
+// Forward declarations for new action functions
+void goToNAC2Setting();
+void nac2SettingRAC2();
+void nac2SettingCommonNAC2();
+
 // Extend the inputConfigItems array
 MenuItem inputConfigItems[] = {{"Zone Setting", goToZoneSetting}, {"Pressure Switch Config", goToPressureSwitchConfig}};
 const int inputConfigSize = sizeof(inputConfigItems) / sizeof(MenuItem);
@@ -103,7 +121,7 @@ MenuItem zone2Items[] = {{"Location", zone2Location}, {"Enable/Disable", zone2En
 MenuItem zone3Items[] = {{"Location", zone3Location}, {"Enable/Disable", zone3EnableDisable}};
 MenuItem zone4Items[] = {{"Location", zone4Location}, {"Enable/Disable", zone4EnableDisable}};
 
-MenuItem outputConfigItems[] = {{"RAC Setting", goToRACSetting}};
+MenuItem outputConfigItems[] = {{"RAC Setting", goToRACSetting}, {"NAC Setting", goToNACSetting}};
 const int outputConfigSize = sizeof(outputConfigItems) / sizeof(MenuItem);
 
 MenuItem racSettingItems[] = {{"RAC 1 Setting", goToRAC1Setting}, {"RAC 2 Setting", goToRAC2Setting}};
@@ -114,6 +132,15 @@ const int rac1SettingSize = sizeof(rac1SettingItems) / sizeof(MenuItem);
 
 MenuItem rac2SettingItems[] = {{"Z3 & Z4", rac2SettingZ3Z4}, {"Z3 or Z4", rac2SettingZ3orZ4}, {"Z3", rac2SettingZ3}, {"Z4", rac2SettingZ4}};
 const int rac2SettingSize = sizeof(rac2SettingItems) / sizeof(MenuItem);
+
+MenuItem nacSettingItems[] = {{"NAC 1 Setting", goToNAC1Setting}, {"NAC 2 Setting", goToNAC2Setting}};
+const int nacSettingSize = sizeof(nacSettingItems) / sizeof(MenuItem);
+
+MenuItem nac2SettingItems[] = {{"RAC 2", nac2SettingRAC2}, {"Common", nac2SettingCommonNAC2}};
+const int nac2SettingSize = sizeof(nac2SettingItems) / sizeof(MenuItem);
+
+MenuItem nac1SettingItems[] = {{"RAC 1", nac1SettingRAC1}, {"Common", nac1SettingCommon}};
+const int nac1SettingSize = sizeof(nac1SettingItems) / sizeof(MenuItem);
 
 const int mainMenuSize = sizeof(mainMenuItems) / sizeof(MenuItem);
 const int zoneSettingSize = sizeof(zoneSettingItems) / sizeof(MenuItem);
@@ -163,6 +190,32 @@ void goToRAC2Setting() {
   currentMenu = RAC_2_SETTING;
   currentIndex = 0;
 }
+
+void goToNACSetting() {
+  pushMenu(currentMenu);
+  currentMenu = NAC_SETTING;
+  currentIndex = 0;
+}
+
+void goToNAC1Setting() {
+  pushMenu(currentMenu);
+  currentMenu = NAC_1_SETTING;
+  currentIndex = 0;
+}
+
+void goToNAC2Setting() {
+  pushMenu(currentMenu);
+  currentMenu = NAC_2_SETTING;
+  currentIndex = 0;
+}
+
+// Implement the action functions for NAC 2 Settings
+void nac2SettingRAC2() { /* Implement Action for NAC 2 - RAC 2 */ }
+void nac2SettingCommonNAC2() { /* Implement Action for NAC 2 - Common */ }
+
+// Implement the action functions for NAC 1 Settings
+void nac1SettingRAC1() { /* Implement Action */ }
+void nac1SettingCommon() { /* Implement Action */ }
 
 // Implement the action functions for RAC 2 Settings
 void rac2SettingZ3Z4() { /* Implement Action */ }
@@ -268,6 +321,15 @@ void handleKeyPress(char key) {
     case RAC_2_SETTING:
       navigateMenu(rac2SettingItems, rac2SettingSize, key);
       break;
+    case NAC_SETTING:
+      navigateMenu(nacSettingItems, nacSettingSize, key);
+      break;
+    case NAC_1_SETTING:
+      navigateMenu(nac1SettingItems, nac1SettingSize, key);
+      break;
+    case NAC_2_SETTING:
+      navigateMenu(nac2SettingItems, nac2SettingSize, key);
+      break;
     // ... other cases
   }
 }
@@ -315,6 +377,15 @@ void updateDisplay() {
       break;
     case RAC_2_SETTING:
       displayMenu(rac2SettingItems, rac2SettingSize);
+      break;
+    case NAC_SETTING:
+      displayMenu(nacSettingItems, nacSettingSize);
+      break;
+    case NAC_1_SETTING:
+      displayMenu(nac1SettingItems, nac1SettingSize);
+      break;
+    case NAC_2_SETTING:
+      displayMenu(nac2SettingItems, nac2SettingSize);
       break;
     // ... other cases
   }
