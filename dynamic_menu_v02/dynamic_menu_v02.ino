@@ -23,7 +23,10 @@ enum MenuState {
     PRESSURE_SWITCH_CONFIG, RAC_1, RAC_2, 
     OUTPUT_CONFIG, RAC_SETTING, RAC_1_SETTING, RAC_2_SETTING, 
     NAC_SETTING, NAC_1_SETTING, NAC_2_SETTING, 
-    RELAY_SETTING, RELAY_1_SETTING, RELAY_2_SETTING
+    RELAY_SETTING, RELAY_1_SETTING, RELAY_2_SETTING,
+    TIMER_DELAY_SETTING, DATE_TIME_SETTING, AUTO_SILENCE_SETTING, 
+    CHIME_SETTING, PASSWORD_SETTING, PANEL_INFO_SETTING, 
+    HISTORY, FACTORY_RESET
 };
 
 
@@ -103,6 +106,16 @@ void relay2SettingZ3();
 void relay2SettingZ4();
 void relay2SettingZ3Z4();
 
+// Forward declarations for new action functions
+void goToTimerDelaySetting();
+void goToDateTimeSetting();
+void goToAutoSilenceSetting();
+void goToChimeSetting();
+void goToPasswordSetting();
+void goToPanelInfoSetting();
+void goToHistory();
+void goToFactoryReset();
+
 // Extend the inputConfigItems array
 MenuItem inputConfigItems[] = {{"Zone Setting", goToZoneSetting}, {"Pressure Switch Config", goToPressureSwitchConfig}};
 const int inputConfigSize = sizeof(inputConfigItems) / sizeof(MenuItem);
@@ -127,7 +140,18 @@ void rac1Switch() { /* Implement RAC 1 Switch Action */ }
 void rac2Switch() { /* Implement RAC 2 Switch Action */ }
 
 
-MenuItem mainMenuItems[] = {{"Input Config", goToInputConfig}, {"Output Config", goToOutputConfig}};
+MenuItem mainMenuItems[] = {
+    {"Input Config", goToInputConfig}, 
+    {"Output Config", goToOutputConfig}, 
+    {"Timer/Delay Setting", goToTimerDelaySetting}, 
+    {"Date/Time Setting", goToDateTimeSetting}, 
+    {"Auto Silence Setting", goToAutoSilenceSetting}, 
+    {"Chime Setting", goToChimeSetting}, 
+    {"Password Setting", goToPasswordSetting}, 
+    {"Panel Info Setting", goToPanelInfoSetting}, 
+    {"History", goToHistory}, 
+    {"Factory Reset", goToFactoryReset}
+};
 MenuItem zoneSettingItems[] = {{"Zone 1", goToZone1}, {"Zone 2", goToZone2}, {"Zone 3", goToZone3}, {"Zone 4", goToZone4}};
 MenuItem zone1Items[] = {{"Location", zone1Location}, {"Enable/Disable", zone1EnableDisable}};
 MenuItem zone2Items[] = {{"Location", zone2Location}, {"Enable/Disable", zone2EnableDisable}};
@@ -236,6 +260,16 @@ void goToRelaySetting() {
   currentMenu = RELAY_SETTING;
   currentIndex = 0;
 }
+
+// Implement the action functions for new menu items
+void goToTimerDelaySetting() { /* Implement Action */ }
+void goToDateTimeSetting() { /* Implement Action */ }
+void goToAutoSilenceSetting() { /* Implement Action */ }
+void goToChimeSetting() { /* Implement Action */ }
+void goToPasswordSetting() { /* Implement Action */ }
+void goToPanelInfoSetting() { /* Implement Action */ }
+void goToHistory() { /* Implement Action */ }
+void goToFactoryReset() { /* Implement Action */ }
 
 void goToRelay1Setting() { pushMenu(currentMenu); currentMenu = RELAY_1_SETTING; currentIndex = 0; }
 void goToRelay2Setting() { pushMenu(currentMenu); currentMenu = RELAY_2_SETTING; currentIndex = 0; }
