@@ -21,7 +21,7 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 LiquidCrystal_I2C lcd(0x27, 16, 2); // Set the LCD I2C address
 
 enum MenuState { 
-    MAIN_MENU, INPUT_CONFIG, ZONE_SETTING, ZONE_1, ZONE_2, ZONE_3, ZONE_4, 
+    HOME_SCREEN, MAIN_MENU, INPUT_CONFIG, ZONE_SETTING, ZONE_1, ZONE_2, ZONE_3, ZONE_4, 
     PRESSURE_SWITCH_CONFIG, RAC_1, RAC_2, 
     OUTPUT_CONFIG, RAC_SETTING, RAC_1_SETTING, RAC_2_SETTING, 
     NAC_SETTING, NAC_1_SETTING, NAC_2_SETTING, 
@@ -329,6 +329,12 @@ void zone4Location() { /* Implement Zone 4 Location Action */ }
 void zone4EnableDisable() { /* Implement Zone 4 Enable/Disable Action */ }
 
 void navigateMenu(MenuItem* menuItems, int menuSize, char key) {
+  if (key == 'B' && currentMenu == MAIN_MENU) {
+        currentMenu = HOME_SCREEN;
+        updateDisplay();
+        return;
+    }
+    
   switch (key) {
     case '4': // Scroll Left
       if (currentIndex > 0) {
@@ -408,6 +414,11 @@ void displayMenu(MenuItem* menuItems, int menuSize) {
 
 
 void handleKeyPress(char key) {
+  if (currentMenu == HOME_SCREEN && key == 'C') {
+        currentMenu = MAIN_MENU;
+        updateDisplay();
+        return;
+    }
   switch (currentMenu) {
     case MAIN_MENU:
       navigateMenu(mainMenuItems, mainMenuSize, key);
@@ -474,6 +485,12 @@ void handleKeyPress(char key) {
 }
 
 void updateDisplay() {
+  lcd.clear();
+    if (currentMenu == HOME_SCREEN) {
+        lcd.print("Home Screen");
+        return;
+    }
+    
   switch (currentMenu) {
     case MAIN_MENU:
       displayMenu(mainMenuItems, mainMenuSize);
@@ -543,7 +560,8 @@ void setup() {
   // LCD and keypad initialization (omitted for brevity)
   lcd.init();
   lcd.backlight();
-  pushMenu(currentMenu); // Initialize the menu history
+  pushMenu(currentMenu); // Initialize the menu history 
+  currentMenu = HOME_SCREEN;
   updateDisplay(); // Initial display update
 }
 
