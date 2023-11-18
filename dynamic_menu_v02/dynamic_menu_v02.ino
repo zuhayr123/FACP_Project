@@ -2,6 +2,8 @@
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 
+
+
 char lastSelectedMenu[20]; // Assuming maximum menu name length is 20 characters
 const int buzzerPin = 10;
 // Keypad setup for 4x4 keypad
