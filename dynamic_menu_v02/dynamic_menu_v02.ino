@@ -3,7 +3,7 @@
 #include <Wire.h>
 
 char lastSelectedMenu[20]; // Assuming maximum menu name length is 20 characters
-
+const int buzzerPin = 10;
 // Keypad setup for 4x4 keypad
 const byte ROWS = 4; // Four rows
 const byte COLS = 4; // Four columns
@@ -19,6 +19,11 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
 // LCD setup
 LiquidCrystal_I2C lcd(0x27, 16, 2); // Set the LCD I2C address
+
+char leftSection[] = "Z1:Nrml"; // Placeholder for left section content
+char rightSection[] = "Z2:Nrml"; // Placeholder for right section content
+char dateTime[] = "07/11/23 12:18"; // Placeholder for date and time
+
 
 enum MenuState { 
     HOME_SCREEN, MAIN_MENU, INPUT_CONFIG, ZONE_SETTING, ZONE_1, ZONE_2, ZONE_3, ZONE_4, 
@@ -414,6 +419,11 @@ void displayMenu(MenuItem* menuItems, int menuSize) {
 
 
 void handleKeyPress(char key) {
+
+  if (key != NO_KEY) {
+        beepBuzzer(); // Beep the buzzer on any keypress
+    }
+    
   if (currentMenu == HOME_SCREEN && key == 'C') {
         currentMenu = MAIN_MENU;
         updateDisplay();
@@ -487,7 +497,12 @@ void handleKeyPress(char key) {
 void updateDisplay() {
   lcd.clear();
     if (currentMenu == HOME_SCREEN) {
-        lcd.print("Home Screen");
+        lcd.setCursor(0, 0); // Set cursor to the first line
+        lcd.print(leftSection); // Print the left section content
+        lcd.setCursor(9, 0); // Set cursor position for right section
+        lcd.print(rightSection); // Print the right section content
+        lcd.setCursor(0, 1); // Set cursor to the second line
+        lcd.print(dateTime); // Print the date and time
         return;
     }
     
@@ -556,7 +571,14 @@ void updateDisplay() {
   }
 }
 
+void beepBuzzer() {
+    digitalWrite(buzzerPin, HIGH); // Turn buzzer on
+    delay(50); // Wait for 50 milliseconds
+    digitalWrite(buzzerPin, LOW); // Turn buzzer off
+}
+
 void setup() {
+  pinMode(buzzerPin, OUTPUT);
   // LCD and keypad initialization (omitted for brevity)
   lcd.init();
   lcd.backlight();
