@@ -2,6 +2,8 @@
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 
+char lastSelectedMenu[20]; // Assuming maximum menu name length is 20 characters
+
 // Keypad setup for 4x4 keypad
 const byte ROWS = 4; // Four rows
 const byte COLS = 4; // Four columns
@@ -202,60 +204,70 @@ void pushMenu(MenuState menu) {
 }
 
 void goToInputConfig() {
+  strcpy(lastSelectedMenu, "Input Config");
   pushMenu(currentMenu);
   currentMenu = INPUT_CONFIG;
   currentIndex = 0;
 }
 
 void goToZoneSetting() {
+  strcpy(lastSelectedMenu, "Zone Setting");
   pushMenu(currentMenu);
   currentMenu = ZONE_SETTING;
   currentIndex = 0;
 }
 
 void goToOutputConfig() {
+  strcpy(lastSelectedMenu, "Output Config");
   pushMenu(currentMenu);
   currentMenu = OUTPUT_CONFIG;
   currentIndex = 0;
 }
 
 void goToRACSetting() {
+  strcpy(lastSelectedMenu, "RAAC Config");
   pushMenu(currentMenu);
   currentMenu = RAC_SETTING;
   currentIndex = 0;
 }
 
 void goToRAC1Setting() {
+  strcpy(lastSelectedMenu, "RAC1 Config");
   pushMenu(currentMenu);
   currentMenu = RAC_1_SETTING;
   currentIndex = 0;
 }
 
 void goToRAC2Setting() {
+  strcpy(lastSelectedMenu, "RAC2 Config");
   pushMenu(currentMenu);
   currentMenu = RAC_2_SETTING;
   currentIndex = 0;
 }
 
 void goToNACSetting() {
+  strcpy(lastSelectedMenu, "NAC Config");
   pushMenu(currentMenu);
   currentMenu = NAC_SETTING;
   currentIndex = 0;
 }
 
 void goToNAC1Setting() {
+  strcpy(lastSelectedMenu, "NAC1 Config");
   pushMenu(currentMenu);
   currentMenu = NAC_1_SETTING;
   currentIndex = 0;
 }
 
 void goToNAC2Setting() {
+  strcpy(lastSelectedMenu, "NAC2 Config");
   pushMenu(currentMenu);
   currentMenu = NAC_2_SETTING;
   currentIndex = 0;
 }
 
 void goToRelaySetting() {
+  strcpy(lastSelectedMenu, "Relay Config");
   pushMenu(currentMenu);
   currentMenu = RELAY_SETTING;
   currentIndex = 0;
@@ -318,10 +330,20 @@ void zone4EnableDisable() { /* Implement Zone 4 Enable/Disable Action */ }
 
 void navigateMenu(MenuItem* menuItems, int menuSize, char key) {
   switch (key) {
-    case '4': currentIndex = max(0, currentIndex - 1); break;
-    case '6': currentIndex = min(menuSize - 1, currentIndex + 1); break;
-    case 'A': menuItems[currentIndex].action(); break;
-    case 'B': 
+    case '4': // Scroll Left
+      if (currentIndex > 0) {
+        currentIndex--;
+      }
+      break;
+    case '6': // Scroll Right
+      if (currentIndex < menuSize - 1) {
+        currentIndex++;
+      }
+      break;
+    case 'A': // Select
+      menuItems[currentIndex].action();
+      break;
+    case 'B': // Go Back
       if (menuHistoryPointer >= 0) {
         currentMenu = menuHistory[menuHistoryPointer--];
         currentIndex = 0;
@@ -330,23 +352,58 @@ void navigateMenu(MenuItem* menuItems, int menuSize, char key) {
   }
 }
 
+
 void displayMenu(MenuItem* menuItems, int menuSize) {
-  lcd.clear();
+    lcd.clear();
 
-  // Determine the start index for displaying menu items based on the current index and LCD size
-  int startIndex = max(0, min(currentIndex, menuSize - 2));  // Adjust -2 based on your LCD size
+    // Dynamically display the name of the current menu on the first line
+    switch (currentMenu) {
+        case MAIN_MENU:
+            lcd.print("Main Menu");
+            break;
+        case INPUT_CONFIG:
+            lcd.print("Input Config");
+            break;
+        case OUTPUT_CONFIG:
+            lcd.print("Output Config");
+            break;
+        // Add cases for other menus as needed
+        // ...
+        default:
+            lcd.print("Menu"); // Fallback or generic title
+    }
 
-  for (int i = 0; i < min(2, menuSize - startIndex); i++) {  // Adjust 2 based on your LCD size
-    if (startIndex + i == currentIndex) {
-      lcd.print("> ");  // Indicate current selection
+    // Second line: Display the current submenu item with conditional arrows
+    String secondLine = " ";  // Start with a space for alignment
+    int availableChars = 14; // 2 chars are reserved for '<' and '>'
+
+    // Add left arrow if not at the first item
+    if (currentIndex > 0) {
+        secondLine[0] = '<';
+    }
+
+    String menuItem = menuItems[currentIndex].name;
+    // Truncate the menu item if it's too long
+    if (menuItem.length() > availableChars) {
+        menuItem = menuItem.substring(0, availableChars - 2) + "..";
+    }
+    secondLine += menuItem;
+
+    // Pad with spaces to ensure right alignment
+    while (secondLine.length() < 15) {
+        secondLine += " ";
+    }
+
+    // Add right arrow if not at the last item
+    if (currentIndex < menuSize - 1) {
+        secondLine += ">";
     } else {
-      lcd.print("  ");
+        secondLine += " "; // Add space if no right arrow
     }
-    lcd.print(menuItems[startIndex + i].name);
-    if (i < min(2, menuSize - startIndex) - 1) {
-      lcd.setCursor(0, i + 1);  // Move to the next line
-    }
-  }
+
+    // Display the scrollable item on the second line
+    lcd.setCursor(0, 1);
+    lcd.print(secondLine);
 }
 
 
