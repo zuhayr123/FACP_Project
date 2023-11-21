@@ -1,11 +1,15 @@
 #include <Keypad.h>
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
+#include <RTClib.h>
+
 
 bool isAlertActive = false; // Global variable to track the state of the alert
 char alertMessage[16] = ""; // Global variable to hold the alert message
 unsigned long alertStartTime = 0; // Time when the alert started
 const unsigned long alertInterval = 1000; // Interval for alert beep and display swap
+
+RTC_DS3231 rtc;
 
 
 char lastSelectedMenu[20]; // Assuming maximum menu name length is 20 characters
@@ -517,6 +521,9 @@ void handleKeyPress(char key) {
 }
 
 void updateDisplay() {
+  static unsigned long lastTimeUpdate = 0;
+  const unsigned long timeUpdateInterval = 4000; // 4 seconds in milliseconds
+  static bool firstUpdateDone = false;
   lcd.clear();
 
   if (isAlertActive) {
@@ -526,13 +533,23 @@ void updateDisplay() {
   }
   
     if (currentMenu == HOME_SCREEN) {
-        lcd.setCursor(0, 0); // Set cursor to the first line
-        lcd.print(leftSection); // Print the left section content
-        lcd.setCursor(9, 0); // Set cursor position for right section
-        lcd.print(rightSection); // Print the right section content
-        lcd.setCursor(0, 1); // Set cursor to the second line
-        lcd.print(dateTime); // Print the date and time
-        return;
+    unsigned long currentMillis = millis();
+    static char dateTime[20] = "Loading..."; // Static variable to retain the value
+
+    if (currentMillis - lastTimeUpdate >= timeUpdateInterval) {
+      lastTimeUpdate = currentMillis;
+      DateTime now = rtc.now(); // Get current date and time
+
+      sprintf(dateTime, "%02d/%02d/%02d %02d:%02d", now.day(), now.month(), now.year() % 100, now.hour(), now.minute());
+    }
+
+    lcd.setCursor(0, 0); // Set cursor to the first line
+    lcd.print(leftSection); // Print the left section content
+    lcd.setCursor(9, 0); // Set cursor position for right section
+    lcd.print(rightSection); // Print the right section content
+    lcd.setCursor(0, 1); // Set cursor to the second line
+    lcd.print(dateTime); // Print the date and time
+    return;
     }
     
   switch (currentMenu) {
@@ -607,6 +624,7 @@ void beepBuzzer() {
 }
 
 void setup() {
+  Serial.begin(57600);
   pinMode(buzzerPin, OUTPUT);
   // LCD and keypad initialization (omitted for brevity)
   lcd.init();
@@ -614,6 +632,22 @@ void setup() {
   pushMenu(currentMenu); // Initialize the menu history 
   currentMenu = HOME_SCREEN;
   updateDisplay(); // Initial display update
+
+  if (!rtc.begin()) {
+    Serial.println("Couldn't find RTC");
+    Serial.flush();
+    while (1) delay(10);
+  }
+
+  if (rtc.lostPower()) {
+    Serial.println("RTC lost power, let's set the time!");
+    // When time needs to be set on a new device, or after a power loss, the
+    // following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    // This line sets the RTC with an explicit date & time, for example to set
+    // January 21, 2014 at 3am you would call:
+    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
+  }
 }
 
 void loop() {
