@@ -2,6 +2,10 @@
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 
+bool isAlertActive = false; // Global variable to track the state of the alert
+char alertMessage[16] = ""; // Global variable to hold the alert message
+unsigned long alertStartTime = 0; // Time when the alert started
+const unsigned long alertInterval = 1000; // Interval for alert beep and display swap
 
 
 char lastSelectedMenu[20]; // Assuming maximum menu name length is 20 characters
@@ -431,6 +435,22 @@ void handleKeyPress(char key) {
         updateDisplay();
         return;
     }
+
+    if (key == '1') {
+        // Trigger "Alert Message 1"
+        isAlertActive = true;
+        strncpy(alertMessage, "Alert Message 1", sizeof(alertMessage));
+        alertStartTime = millis(); // Reset the timer for the buzzer
+    } else if (key == '2') {
+        // Trigger "Alert Message 2"
+        isAlertActive = true;
+        strncpy(alertMessage, "Alert Message 2", sizeof(alertMessage));
+        alertStartTime = millis(); // Reset the timer for the buzzer
+    } else if (key == '#') {
+        // Clear any active alert
+        isAlertActive = false;
+        digitalWrite(buzzerPin, LOW); // Turn off the buzzer
+    }
   switch (currentMenu) {
     case MAIN_MENU:
       navigateMenu(mainMenuItems, mainMenuSize, key);
@@ -498,6 +518,13 @@ void handleKeyPress(char key) {
 
 void updateDisplay() {
   lcd.clear();
+
+  if (isAlertActive) {
+    lcd.setCursor(0, 0); // Set cursor to the beginning of the first line
+    lcd.print(alertMessage); // Print the alert message
+    return;
+  }
+  
     if (currentMenu == HOME_SCREEN) {
         lcd.setCursor(0, 0); // Set cursor to the first line
         lcd.print(leftSection); // Print the left section content
@@ -594,5 +621,13 @@ void loop() {
   if (key) {
     handleKeyPress(key);
     updateDisplay();
+  }
+
+  if (isAlertActive) {
+    unsigned long currentMillis = millis();
+    if (currentMillis - alertStartTime >= 1000) { // 1 minute = 60,000 milliseconds
+      alertStartTime = currentMillis;
+      digitalWrite(buzzerPin, !digitalRead(buzzerPin));
+    }
   }
 }
