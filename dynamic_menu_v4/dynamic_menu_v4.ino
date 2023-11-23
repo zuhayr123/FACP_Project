@@ -19,13 +19,20 @@ int NAC_ADC_value = 0;
 int RAC_ADC_value = 0;
 int INPUT_state = 0;
 
+const int maxAlerts = 10; // Maximum number of alerts that can be queued
+char alertQueue[maxAlerts][16]; // Queue to store alerts
+int alertQueueStart = 0; // Points to the start of the queue
+int alertQueueEnd = 0; // Points to the end of the queue
+
 bool zone1OpenAlert = false; // Global flag for ZONE1 : OPEN alert
 bool zone1FireAlert = false;   // Flag for "ZONE1 : FIRE"
 bool zone1ShortAlert = false;  // Flag for "ZONE1 : SHORT"
 
+bool zone2OpenAlert = false; // Global flag for ZONE1 : OPEN alert
+bool zone2FireAlert = false;   // Flag for "ZONE1 : FIRE"
+bool zone2ShortAlert = false;  // Flag for "ZONE1 : SHORT"
+
 bool displayNeedsUpdate = true; // Global variable to track if the display needs updating
-
-
 
 bool isAlertActive = false; // Global variable to track the state of the alert
 char alertMessage[16] = ""; // Global variable to hold the alert message
@@ -453,6 +460,11 @@ void displayMenu(MenuItem* menuItems, int menuSize) {
 
 void handleKeyPress(char key) {
 
+  if (key == '#') {
+    dequeueAlert();
+    return;
+  }
+
   if (key != NO_KEY) {
         beepBuzzer(); // Beep the buzzer on any keypress
     }
@@ -646,46 +658,93 @@ void beepBuzzer() {
     digitalWrite(buzzerPin, LOW); // Turn buzzer off
 }
 
-void hwMonitor(){
-  ZONE1_ADC_value = analogRead(ZONE1_ADC);
-  ZONE2_ADC_value = analogRead(ZONE2_ADC);
-  NAC_ADC_value = analogRead(NAC_ADC);
-  RAC_ADC_value = analogRead(RAC_ADC);
-  INPUT_state = digitalRead(INPUT_PI );
+// Function to add an alert to the queue
+void enqueueAlert(const char* alert) {
+  if ((alertQueueEnd + 1) % maxAlerts != alertQueueStart) { // Check if queue is not full
+    strncpy(alertQueue[alertQueueEnd], alert, 16);
+    alertQueueEnd = (alertQueueEnd + 1) % maxAlerts;
+    if (!isAlertActive) {
+      isAlertActive = true;
+      strncpy(alertMessage, alertQueue[alertQueueStart], sizeof(alertMessage));
+      displayNeedsUpdate = true;
+    }
+  }
+}
 
-  if(ZONE1_ADC_value < 20 && !zone1OpenAlert){
-    displayNeedsUpdate = true;
-    Serial.println("ZONE1 : OPEN");
-    zone1OpenAlert = true; // Set the ZONE1 open alert flag
-    isAlertActive = true; 
-    strncpy(alertMessage, "ZONE1 : OPEN", sizeof(alertMessage));
-    alertStartTime = millis();
-    beepBuzzer(); 
-  } // Check for ZONE1 : NORMAL
-  else if (ZONE1_ADC_value >= 20 && ZONE1_ADC_value < 100 && (zone1OpenAlert || zone1FireAlert || zone1ShortAlert)) {
-    // Reset all alerts
-    zone1OpenAlert = zone1FireAlert = zone1ShortAlert = false;
-    isAlertActive = false;
-    alertMessage[0] = '\0';
-    displayNeedsUpdate = true;
-  } 
-  // Check for ZONE1 : FIRE
-  else if (ZONE1_ADC_value >= 100 && ZONE1_ADC_value < 800 && !zone1FireAlert) {
-    Serial.println("ZONE1 : FIRE");
-    zone1OpenAlert = zone1ShortAlert = false; // Reset other alerts
-    zone1FireAlert = isAlertActive = true;
-    strncpy(alertMessage, "ZONE1 : FIRE", sizeof(alertMessage));
-    displayNeedsUpdate = true;
-  } 
-  // Check for ZONE1 : SHORT
-  else if (ZONE1_ADC_value >= 800 && !zone1ShortAlert) {
-    Serial.println("ZONE1 : SHORT");
-    zone1OpenAlert = zone1FireAlert = false; // Reset other alerts
-    zone1ShortAlert = isAlertActive = true;
-    strncpy(alertMessage, "ZONE1 : SHORT", sizeof(alertMessage));
+// Function to remove an alert from the queue
+void dequeueAlert() {
+  if (alertQueueStart != alertQueueEnd) { // Check if queue is not empty
+    alertQueueStart = (alertQueueStart + 1) % maxAlerts;
+    if (alertQueueStart == alertQueueEnd) {
+      isAlertActive = false;
+      alertMessage[0] = '\0';
+    } else {
+      strncpy(alertMessage, alertQueue[alertQueueStart], sizeof(alertMessage));
+    }
     displayNeedsUpdate = true;
   }
 }
+
+void hwMonitor() {
+  ZONE1_ADC_value = analogRead(ZONE1_ADC);
+  ZONE2_ADC_value = analogRead(ZONE2_ADC);
+
+  // ZONE1 : OPEN
+  if (ZONE1_ADC_value < 20 && !zone1OpenAlert) {
+    zone1OpenAlert = true;
+    zone1FireAlert = zone1ShortAlert = false;
+    enqueueAlert("ZONE1 : OPEN");
+  } else if (ZONE1_ADC_value >= 20 && zone1OpenAlert) {
+    zone1OpenAlert = false;
+  }
+
+  // ZONE1 : FIRE
+  if (ZONE1_ADC_value >= 100 && ZONE1_ADC_value < 800 && !zone1FireAlert) {
+    zone1FireAlert = true;
+    zone1OpenAlert = zone1ShortAlert = false;
+    enqueueAlert("ZONE1 : FIRE");
+  } else if ((ZONE1_ADC_value < 100 || ZONE1_ADC_value >= 800) && zone1FireAlert) {
+    zone1FireAlert = false;
+  }
+
+  // ZONE1 : SHORT
+  if (ZONE1_ADC_value >= 800 && !zone1ShortAlert) {
+    zone1ShortAlert = true;
+    zone1OpenAlert = zone1FireAlert = false;
+    enqueueAlert("ZONE1 : SHORT");
+  } else if (ZONE1_ADC_value < 800 && zone1ShortAlert) {
+    zone1ShortAlert = false;
+  }
+
+  // ZONE2 : OPEN
+  if (ZONE2_ADC_value < 20 && !zone2OpenAlert) {
+    zone2OpenAlert = true;
+    zone2FireAlert = zone2ShortAlert = false;
+    enqueueAlert("ZONE2 : OPEN");
+  } else if (ZONE2_ADC_value >= 20 && zone2OpenAlert) {
+    zone2OpenAlert = false;
+  }
+
+  // ZONE2 : FIRE
+  if (ZONE2_ADC_value >= 100 && ZONE2_ADC_value < 800 && !zone2FireAlert) {
+    zone2FireAlert = true;
+    zone2OpenAlert = zone2ShortAlert = false;
+    enqueueAlert("ZONE2 : FIRE");
+  } else if ((ZONE2_ADC_value < 100 || ZONE2_ADC_value >= 800) && zone2FireAlert) {
+    zone2FireAlert = false;
+  }
+
+  // ZONE2 : SHORT
+  if (ZONE2_ADC_value >= 800 && !zone2ShortAlert) {
+    zone2ShortAlert = true;
+    zone2OpenAlert = zone2FireAlert = false;
+    enqueueAlert("ZONE2 : SHORT");
+  } else if (ZONE2_ADC_value < 800 && zone2ShortAlert) {
+    zone2ShortAlert = false;
+  }
+}
+
+
 
 void setup() {
   Serial.begin(57600);
