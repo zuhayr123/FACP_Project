@@ -1,7 +1,7 @@
 #include <Keypad.h>
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
-#include "RTClib.h"
+#include <RTClib.h>
 
 const int ZONE1_ADC = A11;
 const int ZONE2_ADC = A12;
@@ -18,7 +18,20 @@ int ZONE2_ADC_value = 0;
 int NAC_ADC_value = 0;
 int RAC_ADC_value = 0;
 int INPUT_state = 0;
+char inByte = 0;
 
+
+#define MAX_ALARMS 10
+struct Alarm {
+  char message[16];
+};
+
+Alarm alarmQueue[MAX_ALARMS];
+int alarmFront = 0;
+int alarmRear = -1;
+int alarmCount = 0;
+
+bool isZone2FireEnqueued = false;
 
 bool isAlertActive = false; // Global variable to track the state of the alert
 char alertMessage[16] = ""; // Global variable to hold the alert message
@@ -61,8 +74,6 @@ enum MenuState {
     CHIME_SETTING, PASSWORD_SETTING, PANEL_INFO_SETTING, 
     HISTORY, FACTORY_RESET
 };
-
-
 
 
 MenuState currentMenu = MAIN_MENU;
@@ -227,6 +238,36 @@ const int zone1Size = sizeof(zone1Items) / sizeof(MenuItem);
 const int zone2Size = sizeof(zone2Items) / sizeof(MenuItem);
 const int zone3Size = sizeof(zone3Items) / sizeof(MenuItem);
 const int zone4Size = sizeof(zone4Items) / sizeof(MenuItem);
+
+
+void enqueueAlarm(const char* msg) {
+  if (alarmCount < MAX_ALARMS) {
+    alarmRear = (alarmRear + 1) % MAX_ALARMS;
+    strncpy(alarmQueue[alarmRear].message, msg, sizeof(alarmQueue[alarmRear].message));
+    alarmCount++;
+  }
+}
+
+void dequeueAlarm() {
+  if (alarmCount > 0) {
+    alarmFront = (alarmFront + 1) % MAX_ALARMS;
+    alarmCount--;
+  }
+}
+
+const char* currentAlarmMessage() {
+  if (alarmCount > 0) {
+    return alarmQueue[alarmFront].message;
+  }
+  return "";
+}
+
+bool isAlarmQueueEmpty() {
+  return alarmCount == 0;
+}
+
+
+
 
 void pushMenu(MenuState menu) {
   if (menuHistoryPointer < maxMenuDepth - 1) {
@@ -466,11 +507,43 @@ void handleKeyPress(char key) {
         isAlertActive = true;
         strncpy(alertMessage, "Alert Message 2", sizeof(alertMessage));
         alertStartTime = millis(); // Reset the timer for the buzzer
-    } else if (key == '#') {
-        // Clear any active alert
-        isAlertActive = false;
-        digitalWrite(buzzerPin, LOW); // Turn off the buzzer
     }
+//    else if (key == '#') {
+//        // Clear any active alert
+//        isAlertActive = false;
+//        digitalWrite(buzzerPin, LOW); // Turn off the buzzer
+//    }
+    else if (key == '#') { // Acknowledge the alarm
+      Serial.println("# pressed");
+      delay(1000);
+      dequeueAlarm();
+      Serial.println(isAlarmQueueEmpty());
+      isAlertActive = false;
+      updateDisplay();
+//      if (isAlarmQueueEmpty()) {
+//        isAlertActive = false;
+//        delay(1000);
+//        Serial.println("Alert active falsed");
+//      }
+    } 
+    else if (key == 'D') { // Reset the alarm
+        while (!isAlarmQueueEmpty()) {
+          dequeueAlarm();
+        }
+        isZone2FireEnqueued = false;
+        isAlertActive = false;
+    }
+
+
+
+
+
+
+
+
+
+
+    
   switch (currentMenu) {
     case MAIN_MENU:
       navigateMenu(mainMenuItems, mainMenuSize, key);
@@ -543,8 +616,9 @@ void updateDisplay() {
   lcd.clear();
 
   if (isAlertActive) {
-    lcd.setCursor(0, 0); // Set cursor to the beginning of the first line
-    lcd.print(alertMessage); // Print the alert message
+    lcd.setCursor(0, 0);
+    lcd.print(currentAlarmMessage());
+//    lcd.print(alertMessage);
     return;
   }
   
@@ -637,10 +711,156 @@ void beepBuzzer() {
     digitalWrite(buzzerPin, HIGH); // Turn buzzer on
     delay(50); // Wait for 50 milliseconds
     digitalWrite(buzzerPin, LOW); // Turn buzzer off
+    delay(50);
+}
+
+
+void hwSetup(){
+  pinMode(NAC_VCC, OUTPUT);
+  digitalWrite(NAC_VCC, HIGH);
+  pinMode(RAC_VCC, OUTPUT);
+  digitalWrite(RAC_VCC, HIGH);
+  pinMode(NAC_PO, OUTPUT);
+  pinMode(RAC_PO, OUTPUT);
+  pinMode(RELAY_PO, OUTPUT);
+  pinMode(INPUT_state, INPUT);
+}
+
+void hwMonitor(){
+  ZONE1_ADC_value = analogRead(ZONE1_ADC);
+  ZONE2_ADC_value = analogRead(ZONE2_ADC);
+  NAC_ADC_value = analogRead(NAC_ADC);
+  RAC_ADC_value = analogRead(RAC_ADC);
+  INPUT_state = digitalRead(INPUT_PI );
+
+  if(ZONE1_ADC_value < 20){
+//    Serial.println("ZONE1 : OPEN");
+//    isAlertActive = true;
+//    enqueueAlarm("ZONE 1 Open");
+//    alertStartTime = millis();
+  }
+  else if (ZONE1_ADC_value < 100){
+    Serial.println("ZONE1 : NORMAL");
+  }
+  else if (ZONE1_ADC_value < 800){
+//    Serial.println("ZONE1 : FIRE");
+//    isAlertActive = true;
+//    strncpy(alertMessage, "ZONE 1 Fire", sizeof(alertMessage));
+//    alertStartTime = millis();
+  }
+  else if (ZONE1_ADC_value > 800){
+//    Serial.println("ZONE1 : SHORT");
+//    isAlertActive = true;
+//    strncpy(alertMessage, "ZONE 1 Short", sizeof(alertMessage));
+//    alertStartTime = millis();
+  }
+
+  if(ZONE2_ADC_value < 20){
+//    Serial.println("ZONE2 : OPEN");
+//    isAlertActive = true;
+//    enqueueAlarm("ZONE 2 Open");
+//    strncpy(alertMessage, "ZONE 2 Open", sizeof(alertMessage));
+//    alertStartTime = millis();
+  }
+  else if (ZONE2_ADC_value < 100){
+    Serial.println("ZONE2 : NORMAL");
+  }
+  else if (ZONE2_ADC_value < 800 && !isZone2FireEnqueued){
+    Serial.println("ZONE2 : FIRE");
+    isZone2FireEnqueued = true;
+    enqueueAlarm("ZONE 2 FIRE");
+    isAlertActive = true;
+//    strncpy(alertMessage, "ZONE 2 Fire", sizeof(alertMessage));
+    alertStartTime = millis();
+    updateDisplay();
+  }
+  else if (ZONE2_ADC_value > 800){
+//    Serial.println("ZONE2 : SHORT");
+//    isAlertActive = true;
+//    enqueueAlarm("Zone 2 Short");
+//    strncpy(alertMessage, "ZONE 2 Short", sizeof(alertMessage));
+//    alertStartTime = millis();
+  }
+
+  if(NAC_ADC_value > 900){
+    Serial.println("NAC : OPEN");
+//    isAlertActive = true;
+//    strncpy(alertMessage, "NAC Open", sizeof(alertMessage));
+//    alertStartTime = millis();
+  }
+  else if (NAC_ADC_value > 300){
+//    Serial.println("NAC : NORMAL");
+//    isAlertActive = true;
+//    enqueueAlarm("NAC normal");
+//    alertStartTime = millis();
+  }
+  else if (NAC_ADC_value < 300){
+//    Serial.println("NAC : SHORT");
+//    isAlertActive = true;
+//    strncpy(alertMessage, "NAC Short", sizeof(alertMessage));
+//    alertStartTime = millis();
+  }
+
+  if(RAC_ADC_value > 900){
+//    Serial.println("RAC : OPEN");
+//    isAlertActive = true;
+//    strncpy(alertMessage, "RAC Open", sizeof(alertMessage));
+//    alertStartTime = millis();
+  }
+  else if (RAC_ADC_value > 300){
+//    Serial.println("RAC : NORMAL");
+  }
+  else if (RAC_ADC_value < 300){
+//    Serial.println("RAC : SHORT");
+//    isAlertActive = true;
+//    strncpy(alertMessage, "RAC Short", sizeof(alertMessage));
+//    alertStartTime = millis();
+  }
+
+  if(INPUT_state==0){
+//    Serial.println("INPUT : NO");
+  }
+  else{
+//    Serial.println("INPUT : NC");
+  }
+
+  Serial.println("   ");
+  Serial.println("   ");
+
+  
+  if (Serial.available() > 0){
+    inByte = Serial.read();
+    if(inByte=='1'){
+      Serial.println("NAC ON");
+      digitalWrite(NAC_PO, HIGH);
+    }
+    if(inByte=='2'){
+      Serial.println("NAC OFF");
+      digitalWrite(NAC_PO, LOW);
+    }
+    if(inByte=='3'){
+      Serial.println("RAC ON");
+      digitalWrite(RAC_PO, HIGH);
+    }
+    if(inByte=='4'){
+      Serial.println("RAC OFF");
+      digitalWrite(RAC_PO, LOW);
+    }
+    if(inByte=='5'){
+      Serial.println("RELAY ON");
+      digitalWrite(RELAY_PO, HIGH);
+    }
+    if(inByte=='6'){
+      Serial.println("RELAY OFF");
+      digitalWrite(RELAY_PO, LOW);
+    }
+  }
+  
+  
 }
 
 void setup() {
-  Serial.begin(57600);
+  Serial.begin(9600);
   pinMode(buzzerPin, OUTPUT);
   // LCD and keypad initialization (omitted for brevity)
   lcd.init();
@@ -649,21 +869,24 @@ void setup() {
   currentMenu = HOME_SCREEN;
   updateDisplay(); // Initial display update
 
-  if (!rtc.begin()) {
-    Serial.println("Couldn't find RTC");
-    Serial.flush();
-    while (1) delay(10);
-  }
+//  if (!rtc.begin()) {
+//    Serial.println("Couldn't find RTC");
+//    Serial.flush();
+//    while (1) delay(10);
+//  }
+//
+//  if (rtc.lostPower()) {
+//    Serial.println("RTC lost power, let's set the time!");
+//    // When time needs to be set on a new device, or after a power loss, the
+//    // following line sets the RTC to the date & time this sketch was compiled
+//    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+//    // This line sets the RTC with an explicit date & time, for example to set
+//    // January 21, 2014 at 3am you would call:
+//    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
+//  }
 
-  if (rtc.lostPower()) {
-    Serial.println("RTC lost power, let's set the time!");
-    // When time needs to be set on a new device, or after a power loss, the
-    // following line sets the RTC to the date & time this sketch was compiled
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    // This line sets the RTC with an explicit date & time, for example to set
-    // January 21, 2014 at 3am you would call:
-    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-  }
+hwSetup();
+  
 }
 
 void loop() {
@@ -679,5 +902,10 @@ void loop() {
       alertStartTime = currentMillis;
       digitalWrite(buzzerPin, !digitalRead(buzzerPin));
     }
+//    Serial.println(isAlertActive);
+//    updateDisplay();
   }
+  hwMonitor();
+//  delay(2000);
+  
 }

@@ -19,6 +19,13 @@ int NAC_ADC_value = 0;
 int RAC_ADC_value = 0;
 int INPUT_state = 0;
 
+bool zone1OpenAlert = false; // Global flag for ZONE1 : OPEN alert
+bool zone1FireAlert = false;   // Flag for "ZONE1 : FIRE"
+bool zone1ShortAlert = false;  // Flag for "ZONE1 : SHORT"
+
+bool displayNeedsUpdate = true; // Global variable to track if the display needs updating
+
+
 
 bool isAlertActive = false; // Global variable to track the state of the alert
 char alertMessage[16] = ""; // Global variable to hold the alert message
@@ -467,9 +474,9 @@ void handleKeyPress(char key) {
         strncpy(alertMessage, "Alert Message 2", sizeof(alertMessage));
         alertStartTime = millis(); // Reset the timer for the buzzer
     } else if (key == '#') {
-        // Clear any active alert
         isAlertActive = false;
-        digitalWrite(buzzerPin, LOW); // Turn off the buzzer
+        digitalWrite(buzzerPin, LOW);
+        alertMessage[0] = '\0'; 
     }
   switch (currentMenu) {
     case MAIN_MENU:
@@ -639,6 +646,47 @@ void beepBuzzer() {
     digitalWrite(buzzerPin, LOW); // Turn buzzer off
 }
 
+void hwMonitor(){
+  ZONE1_ADC_value = analogRead(ZONE1_ADC);
+  ZONE2_ADC_value = analogRead(ZONE2_ADC);
+  NAC_ADC_value = analogRead(NAC_ADC);
+  RAC_ADC_value = analogRead(RAC_ADC);
+  INPUT_state = digitalRead(INPUT_PI );
+
+  if(ZONE1_ADC_value < 20 && !zone1OpenAlert){
+    displayNeedsUpdate = true;
+    Serial.println("ZONE1 : OPEN");
+    zone1OpenAlert = true; // Set the ZONE1 open alert flag
+    isAlertActive = true; 
+    strncpy(alertMessage, "ZONE1 : OPEN", sizeof(alertMessage));
+    alertStartTime = millis();
+    beepBuzzer(); 
+  } // Check for ZONE1 : NORMAL
+  else if (ZONE1_ADC_value >= 20 && ZONE1_ADC_value < 100 && (zone1OpenAlert || zone1FireAlert || zone1ShortAlert)) {
+    // Reset all alerts
+    zone1OpenAlert = zone1FireAlert = zone1ShortAlert = false;
+    isAlertActive = false;
+    alertMessage[0] = '\0';
+    displayNeedsUpdate = true;
+  } 
+  // Check for ZONE1 : FIRE
+  else if (ZONE1_ADC_value >= 100 && ZONE1_ADC_value < 800 && !zone1FireAlert) {
+    Serial.println("ZONE1 : FIRE");
+    zone1OpenAlert = zone1ShortAlert = false; // Reset other alerts
+    zone1FireAlert = isAlertActive = true;
+    strncpy(alertMessage, "ZONE1 : FIRE", sizeof(alertMessage));
+    displayNeedsUpdate = true;
+  } 
+  // Check for ZONE1 : SHORT
+  else if (ZONE1_ADC_value >= 800 && !zone1ShortAlert) {
+    Serial.println("ZONE1 : SHORT");
+    zone1OpenAlert = zone1FireAlert = false; // Reset other alerts
+    zone1ShortAlert = isAlertActive = true;
+    strncpy(alertMessage, "ZONE1 : SHORT", sizeof(alertMessage));
+    displayNeedsUpdate = true;
+  }
+}
+
 void setup() {
   Serial.begin(57600);
   pinMode(buzzerPin, OUTPUT);
@@ -670,7 +718,13 @@ void loop() {
   char key = keypad.getKey();
   if (key) {
     handleKeyPress(key);
+//    updateDisplay();
+    displayNeedsUpdate = true;
+  }
+
+  if (displayNeedsUpdate) {
     updateDisplay();
+    displayNeedsUpdate = false; // Reset the flag after updating the display
   }
 
   if (isAlertActive) {
@@ -680,4 +734,5 @@ void loop() {
       digitalWrite(buzzerPin, !digitalRead(buzzerPin));
     }
   }
+  hwMonitor();
 }
