@@ -18,6 +18,26 @@ int ZONE2_ADC_value = 0;
 int NAC_ADC_value = 0;
 int RAC_ADC_value = 0;
 int INPUT_state = 0;
+int ZONE_1_SHORT = 23;
+int ZONE_1_FIRE = 25;
+int ZONE_1_OPEN = 27;
+int ZONE_2_SHORT = 29;
+int ZONE_2_FIRE = 31;
+int ZONE_2_OPEN = 33;
+int RAC_FAULT = 35;
+int NAC_FAULT = 37;
+int BATTERY_FAULT = 39;
+int RAC_RELEASE = 41;
+int PRE_RELEASE = 43;
+int SYSTEM_ON = 45;
+
+
+bool RAC_FAULT_ALERT = false;
+bool NAC_FAULT_ALERT = false;
+bool BATTERY_FAULT_ALERT = false;
+bool RAC_RELEASE_ALERT = false;
+bool PRE_RELEASE_ALERT = false;
+bool SYSTEM_ON_ALERT = false;
 
 const int maxAlerts = 10; // Maximum number of alerts that can be queued
 char alertQueue[maxAlerts][16]; // Queue to store alerts
@@ -64,7 +84,6 @@ char leftSection[] = "Z1:Nrml"; // Placeholder for left section content
 char rightSection[] = "Z2:Nrml"; // Placeholder for right section content
 char dateTime[] = "07/11/23 12:18"; // Placeholder for date and time
 
-
 enum MenuState { 
     HOME_SCREEN, MAIN_MENU, INPUT_CONFIG, ZONE_SETTING, ZONE_1, ZONE_2, ZONE_3, ZONE_4, 
     PRESSURE_SWITCH_CONFIG, RAC_1, RAC_2, 
@@ -75,9 +94,6 @@ enum MenuState {
     CHIME_SETTING, PASSWORD_SETTING, PANEL_INFO_SETTING, 
     HISTORY, FACTORY_RESET
 };
-
-
-
 
 MenuState currentMenu = MAIN_MENU;
 
@@ -690,58 +706,89 @@ void hwMonitor() {
   ZONE2_ADC_value = analogRead(ZONE2_ADC);
 
   // ZONE1 : OPEN
-  if (ZONE1_ADC_value < 20 && !zone1OpenAlert) {
-    zone1OpenAlert = true;
-    zone1FireAlert = zone1ShortAlert = false;
-    enqueueAlert("ZONE1 : OPEN");
-  } else if (ZONE1_ADC_value >= 20 && zone1OpenAlert) {
-    zone1OpenAlert = false;
+  if (ZONE1_ADC_value < 20) {
+    if (!zone1OpenAlert) {
+      zone1OpenAlert = true;
+      enqueueAlert("ZONE1 : OPEN");
+    }
+    digitalWrite(ZONE_1_OPEN, HIGH); // Turn ON ZONE1 OPEN LED
+  } else {
+    if (zone1OpenAlert) {
+      zone1OpenAlert = false;
+    }
+    digitalWrite(ZONE_1_OPEN, LOW); // Turn OFF ZONE1 OPEN LED
   }
 
   // ZONE1 : FIRE
-  if (ZONE1_ADC_value >= 100 && ZONE1_ADC_value < 800 && !zone1FireAlert) {
-    zone1FireAlert = true;
-    zone1OpenAlert = zone1ShortAlert = false;
-    enqueueAlert("ZONE1 : FIRE");
-  } else if ((ZONE1_ADC_value < 100 || ZONE1_ADC_value >= 800) && zone1FireAlert) {
-    zone1FireAlert = false;
+  if (ZONE1_ADC_value >= 100 && ZONE1_ADC_value < 800) {
+    if (!zone1FireAlert) {
+      zone1FireAlert = true;
+      enqueueAlert("ZONE1 : FIRE");
+    }
+    digitalWrite(ZONE_1_FIRE, HIGH); // Turn ON ZONE1 FIRE LED
+  } else {
+    if (zone1FireAlert) {
+      zone1FireAlert = false;
+    }
+    digitalWrite(ZONE_1_FIRE, LOW); // Turn OFF ZONE1 FIRE LED
   }
 
   // ZONE1 : SHORT
-  if (ZONE1_ADC_value >= 800 && !zone1ShortAlert) {
-    zone1ShortAlert = true;
-    zone1OpenAlert = zone1FireAlert = false;
-    enqueueAlert("ZONE1 : SHORT");
-  } else if (ZONE1_ADC_value < 800 && zone1ShortAlert) {
-    zone1ShortAlert = false;
+  if (ZONE1_ADC_value >= 800) {
+    if (!zone1ShortAlert) {
+      zone1ShortAlert = true;
+      enqueueAlert("ZONE1 : SHORT");
+    }
+    digitalWrite(ZONE_1_SHORT, HIGH); // Turn ON ZONE1 SHORT LED
+  } else {
+    if (zone1ShortAlert) {
+      zone1ShortAlert = false;
+    }
+    digitalWrite(ZONE_1_SHORT, LOW); // Turn OFF ZONE1 SHORT LED
   }
 
-  // ZONE2 : OPEN
-  if (ZONE2_ADC_value < 20 && !zone2OpenAlert) {
-    zone2OpenAlert = true;
-    zone2FireAlert = zone2ShortAlert = false;
-    enqueueAlert("ZONE2 : OPEN");
-  } else if (ZONE2_ADC_value >= 20 && zone2OpenAlert) {
-    zone2OpenAlert = false;
-  }
+  // Zone 2 Alert Monitoring
+    // ZONE2 : OPEN
+    if (ZONE2_ADC_value < 20) {
+        if (!zone2OpenAlert) {
+            zone2OpenAlert = true;
+            enqueueAlert("ZONE2 : OPEN");
+        }
+        digitalWrite(ZONE_2_OPEN, HIGH); // Turn ON ZONE2 OPEN LED
+    } else {
+        if (zone2OpenAlert) {
+            zone2OpenAlert = false;
+        }
+        digitalWrite(ZONE_2_OPEN, LOW); // Turn OFF ZONE2 OPEN LED
+    }
 
-  // ZONE2 : FIRE
-  if (ZONE2_ADC_value >= 100 && ZONE2_ADC_value < 800 && !zone2FireAlert) {
-    zone2FireAlert = true;
-    zone2OpenAlert = zone2ShortAlert = false;
-    enqueueAlert("ZONE2 : FIRE");
-  } else if ((ZONE2_ADC_value < 100 || ZONE2_ADC_value >= 800) && zone2FireAlert) {
-    zone2FireAlert = false;
-  }
+    // ZONE2 : FIRE
+    if (ZONE2_ADC_value >= 100 && ZONE2_ADC_value < 800) {
+        if (!zone2FireAlert) {
+            zone2FireAlert = true;
+            enqueueAlert("ZONE2 : FIRE");
+        }
+        digitalWrite(ZONE_2_FIRE, HIGH); // Turn ON ZONE2 FIRE LED
+    } else {
+        if (zone2FireAlert) {
+            zone2FireAlert = false;
+        }
+        digitalWrite(ZONE_2_FIRE, LOW); // Turn OFF ZONE2 FIRE LED
+    }
 
-  // ZONE2 : SHORT
-  if (ZONE2_ADC_value >= 800 && !zone2ShortAlert) {
-    zone2ShortAlert = true;
-    zone2OpenAlert = zone2FireAlert = false;
-    enqueueAlert("ZONE2 : SHORT");
-  } else if (ZONE2_ADC_value < 800 && zone2ShortAlert) {
-    zone2ShortAlert = false;
-  }
+    // ZONE2 : SHORT
+    if (ZONE2_ADC_value >= 800) {
+        if (!zone2ShortAlert) {
+            zone2ShortAlert = true;
+            enqueueAlert("ZONE2 : SHORT");
+        }
+        digitalWrite(ZONE_2_SHORT, HIGH); // Turn ON ZONE2 SHORT LED
+    } else {
+        if (zone2ShortAlert) {
+            zone2ShortAlert = false;
+        }
+        digitalWrite(ZONE_2_SHORT, LOW); // Turn OFF ZONE2 SHORT LED
+    }
 }
 
 
@@ -749,6 +796,12 @@ void hwMonitor() {
 void setup() {
   Serial.begin(57600);
   pinMode(buzzerPin, OUTPUT);
+  pinMode(ZONE_1_SHORT, OUTPUT);
+  pinMode(ZONE_1_FIRE, OUTPUT);
+  pinMode(ZONE_1_OPEN, OUTPUT);
+  pinMode(ZONE_2_SHORT, OUTPUT);
+  pinMode(ZONE_2_FIRE, OUTPUT);
+  pinMode(ZONE_2_OPEN, OUTPUT);
   // LCD and keypad initialization (omitted for brevity)
   lcd.init();
   lcd.backlight();
