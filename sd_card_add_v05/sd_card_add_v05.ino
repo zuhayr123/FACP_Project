@@ -41,6 +41,10 @@ bool RAC_RELEASE_ALERT = false;
 bool PRE_RELEASE_ALERT = false;
 bool SYSTEM_ON_ALERT = false;
 
+#define MAX_ALERTS_DISPLAY 50 // Maximum number of alerts to display
+String alerts[MAX_ALERTS_DISPLAY];
+int totalAlerts = 0;
+
 const int maxAlerts = 10; // Maximum number of alerts that can be queued
 char alertQueue[maxAlerts][16]; // Queue to store alerts
 int alertQueueStart = 0; // Points to the start of the queue
@@ -346,7 +350,13 @@ void goToAutoSilenceSetting() { /* Implement Action */ }
 void goToChimeSetting() { /* Implement Action */ }
 void goToPasswordSetting() { /* Implement Action */ }
 void goToPanelInfoSetting() { /* Implement Action */ }
-void goToHistory() { /* Implement Action */ }
+void goToHistory() { 
+  loadAlertsFromSD(); // Load the alerts from SD card
+  strcpy(lastSelectedMenu, "History");
+  pushMenu(currentMenu);
+  currentMenu = HISTORY;
+  currentIndex = 0;
+  }
 void goToFactoryReset() { /* Implement Action */ }
 
 void goToRelay1Setting() { pushMenu(currentMenu); currentMenu = RELAY_1_SETTING; currentIndex = 0; }
@@ -512,6 +522,23 @@ void handleKeyPress(char key) {
         alertMessage[0] = '\0'; 
     }
   switch (currentMenu) {
+    case HISTORY:
+      // Navigation logic for the History menu
+      switch (key) {
+        case '4': // Assume '4' is for scrolling up
+          if (currentIndex > 0) {
+            currentIndex--;
+            displayNeedsUpdate = true;
+          }
+          break;
+        case '6': // Assume '6' is for scrolling down
+          if (currentIndex < totalAlerts - 1) {
+            currentIndex++;
+            displayNeedsUpdate = true;
+          }
+          break;
+      }
+      break;
     case MAIN_MENU:
       navigateMenu(mainMenuItems, mainMenuSize, key);
       break;
@@ -607,8 +634,33 @@ void updateDisplay() {
     lcd.print(dateTime); // Print the date and time
     return;
     }
+
+    
     
   switch (currentMenu) {
+    case HISTORY:
+      // Display alert message and error number with date for History page
+      if (totalAlerts > 0 && currentIndex < totalAlerts) {
+        // Extract date and message from the alert string
+        int separatorIndex = alerts[currentIndex].indexOf(" - ");
+        String fullDate = alerts[currentIndex].substring(0, separatorIndex);
+        String message = alerts[currentIndex].substring(separatorIndex + 3);
+
+        // Convert date to dd/mm/yy format
+        String formattedDate = fullDate.substring(0, 6) + fullDate.substring(8, 10);
+
+        // Display error number with formatted date (e.g., "(1/5) 23/02/23")
+        lcd.setCursor(0, 0);
+        lcd.print("(" + String(currentIndex + 1) + "/" + String(totalAlerts) + ") " + formattedDate);
+
+        // Display the error message
+        lcd.setCursor(0, 1); // Move cursor to the second line
+        lcd.print(message);
+      } else {
+        lcd.setCursor(0, 0);
+        lcd.print("No Alerts");
+      }
+      break;
     case MAIN_MENU:
       displayMenu(mainMenuItems, mainMenuSize);
       break;
@@ -885,6 +937,19 @@ void writeToSD(String data) {
     Serial.println("Data written to SD card.");
   } else {
     // If the file didn't open, print an error
+    Serial.println("Error opening data.txt");
+  }
+}
+
+void loadAlertsFromSD() {
+  totalAlerts = 0;
+  myFile = SD.open("data.txt", FILE_READ);
+  if (myFile) {
+    while (myFile.available() && totalAlerts < MAX_ALERTS_DISPLAY) {
+      alerts[totalAlerts++] = myFile.readStringUntil('\n');
+    }
+    myFile.close();
+  } else {
     Serial.println("Error opening data.txt");
   }
 }
