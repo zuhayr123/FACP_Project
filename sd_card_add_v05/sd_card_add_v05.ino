@@ -523,7 +523,6 @@ void handleKeyPress(char key) {
     }
   switch (currentMenu) {
     case HISTORY:
-      // Navigation logic for the History menu
       switch (key) {
         case '4': // Assume '4' is for scrolling up
           if (currentIndex > 0) {
@@ -534,6 +533,13 @@ void handleKeyPress(char key) {
         case '6': // Assume '6' is for scrolling down
           if (currentIndex < totalAlerts - 1) {
             currentIndex++;
+            displayNeedsUpdate = true;
+          }
+          break;
+        case 'B': // Back button
+          if (menuHistoryPointer >= 0) {
+            currentMenu = menuHistory[menuHistoryPointer--];
+            currentIndex = 0; // Reset index for other menus
             displayNeedsUpdate = true;
           }
           break;
@@ -945,12 +951,37 @@ void loadAlertsFromSD() {
   totalAlerts = 0;
   myFile = SD.open("data.txt", FILE_READ);
   if (myFile) {
+    // Count total number of alerts
+    int totalLines = 0;
+    while (myFile.available()) {
+      myFile.readStringUntil('\n');
+      totalLines++;
+    }
+
+    // Go back to the beginning of the file
+    myFile.seek(0);
+
+    // Skip to the last MAX_ALERTS_DISPLAY lines
+    for (int i = 0; i < totalLines - MAX_ALERTS_DISPLAY; i++) {
+      myFile.readStringUntil('\n');
+    }
+
+    // Read the last MAX_ALERTS_DISPLAY alerts
     while (myFile.available() && totalAlerts < MAX_ALERTS_DISPLAY) {
       alerts[totalAlerts++] = myFile.readStringUntil('\n');
     }
+    
+    // Close the file
     myFile.close();
   } else {
     Serial.println("Error opening data.txt");
+  }
+
+  // Reverse the order of alerts
+  for (int i = 0; i < totalAlerts / 2; i++) {
+    String temp = alerts[i];
+    alerts[i] = alerts[totalAlerts - 1 - i];
+    alerts[totalAlerts - 1 - i] = temp;
   }
 }
 
