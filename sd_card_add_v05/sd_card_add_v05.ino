@@ -1,6 +1,8 @@
 #include <Keypad.h>
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
+#include <SPI.h>
+#include <SD.h>
 #include "RTClib.h"
 
 const int ZONE1_ADC = A11;
@@ -102,6 +104,9 @@ int currentIndex = 0; // Current index in the menu
 const int maxMenuDepth = 10; // Maximum depth of menu navigation
 MenuState menuHistory[maxMenuDepth];
 int menuHistoryPointer = -1; // Start with -1 indicating an empty stack
+
+File myFile;
+const int chipSelect = 53; // Change this to your CS pin if different
 
 struct MenuItem {
   const char* name;
@@ -676,13 +681,24 @@ void beepBuzzer() {
 
 // Function to add an alert to the queue
 void enqueueAlert(const char* alert) {
-  if ((alertQueueEnd + 1) % maxAlerts != alertQueueStart) { // Check if queue is not full
-    strncpy(alertQueue[alertQueueEnd], alert, 16);
-    alertQueueEnd = (alertQueueEnd + 1) % maxAlerts;
-    if (!isAlertActive) {
-      isAlertActive = true;
-      strncpy(alertMessage, alertQueue[alertQueueStart], sizeof(alertMessage));
-      displayNeedsUpdate = true;
+  if (!isAlertInQueue(alert)) {
+    if ((alertQueueEnd + 1) % maxAlerts != alertQueueStart) {
+      strncpy(alertQueue[alertQueueEnd], alert, 16);
+      alertQueueEnd = (alertQueueEnd + 1) % maxAlerts;
+      if (!isAlertActive) {
+        isAlertActive = true;
+        strncpy(alertMessage, alertQueue[alertQueueStart], sizeof(alertMessage));
+        displayNeedsUpdate = true;
+      }
+      
+      // Get current time from RTC
+      char timestamp[20];
+      DateTime now = rtc.now();
+      sprintf(timestamp, "%02d/%02d/%02d %02d:%02d:%02d", now.day(), now.month(), now.year(), now.hour(), now.minute(), now.second());
+
+      // Log alert with timestamp to SD card
+      String logEntry = String(timestamp) + " - " + String(alert);
+      writeToSD(logEntry);
     }
   }
 }
@@ -848,8 +864,33 @@ void hwSetup(){
   pinMode(INPUT_state, INPUT);
 }
 
+// Function to check if an alert is already in the queue
+bool isAlertInQueue(const char* alert) {
+  for (int i = alertQueueStart; i != alertQueueEnd; i = (i + 1) % maxAlerts) {
+    if (strcmp(alertQueue[i], alert) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void writeToSD(String data) {
+  // Open file for writing
+  myFile = SD.open("data.txt", FILE_WRITE);
+
+  // Write to file
+  if (myFile) {
+    myFile.println(data);
+    myFile.close(); // Close the file after writing
+    Serial.println("Data written to SD card.");
+  } else {
+    // If the file didn't open, print an error
+    Serial.println("Error opening data.txt");
+  }
+}
+
 void setup() {
-  Serial.begin(57600);
+  Serial.begin(9600);
   pinMode(buzzerPin, OUTPUT);
   pinMode(ZONE_1_SHORT, OUTPUT);
   pinMode(ZONE_1_FIRE, OUTPUT);
@@ -870,6 +911,14 @@ void setup() {
   pushMenu(currentMenu); // Initialize the menu history 
   currentMenu = HOME_SCREEN;
   updateDisplay(); // Initial display update
+
+  // SD Card initialization
+  Serial.print("Initializing SD card...");
+  if (!SD.begin(chipSelect)) {
+    Serial.println("initialization failed!");
+    return;
+  }
+  Serial.println("initialization done.");
 
   if (!rtc.begin()) {
     Serial.println("Couldn't find RTC");
