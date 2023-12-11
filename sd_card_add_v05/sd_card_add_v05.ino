@@ -98,7 +98,7 @@ enum MenuState {
     RELAY_SETTING, RELAY_1_SETTING, RELAY_2_SETTING,
     TIMER_DELAY_SETTING, DATE_TIME_SETTING, AUTO_SILENCE_SETTING, 
     CHIME_SETTING, PASSWORD_SETTING, PANEL_INFO_SETTING, 
-    HISTORY, FACTORY_RESET
+    HISTORY, FACTORY_RESET,ENABLE_DISABLE_ZONE_1,ENABLE_DISABLE_ZONE_2, ENABLE_DISABLE_ZONE_3, ENABLE_DISABLE_ZONE_4
 };
 
 MenuState currentMenu = MAIN_MENU;
@@ -229,6 +229,19 @@ MenuItem zone1Items[] = {{"Location", zone1Location}, {"Enable/Disable", zone1En
 MenuItem zone2Items[] = {{"Location", zone2Location}, {"Enable/Disable", zone2EnableDisable}};
 MenuItem zone3Items[] = {{"Location", zone3Location}, {"Enable/Disable", zone3EnableDisable}};
 MenuItem zone4Items[] = {{"Location", zone4Location}, {"Enable/Disable", zone4EnableDisable}};
+
+MenuItem enableDisableZone1Items[] = {{"Enable", enableZone1}, {"Disable", disableZone1}};
+const int enableDisableZone1Size = sizeof(enableDisableZone1Items) / sizeof(MenuItem);
+
+MenuItem enableDisableZone2Items[] = {{"Enable", enableZone2}, {"Disable", disableZone2}};
+const int enableDisableZone2Size = sizeof(enableDisableZone2Items) / sizeof(MenuItem);
+
+MenuItem enableDisableZone3Items[] = {{"Enable", enableZone3}, {"Disable", disableZone3}};
+const int enableDisableZone3Size = sizeof(enableDisableZone3Items) / sizeof(MenuItem);
+
+MenuItem enableDisableZone4Items[] = {{"Enable", enableZone4}, {"Disable", disableZone4}};
+const int enableDisableZone4Size = sizeof(enableDisableZone4Items) / sizeof(MenuItem);
+// ... Repeat for other zones
 
 MenuItem outputConfigItems[] = {{"RAC Setting", goToRACSetting}, {"NAC Setting", goToNACSetting}, {"Relay Setting", goToRelaySetting}};
 const int outputConfigSize = sizeof(outputConfigItems) / sizeof(MenuItem);
@@ -396,13 +409,41 @@ void goToZone3() { pushMenu(currentMenu); currentMenu = ZONE_3; currentIndex = 0
 void goToZone4() { pushMenu(currentMenu); currentMenu = ZONE_4; currentIndex = 0; }
 
 void zone1Location() { /* Implement Zone 1 Location Action */ }
-void zone1EnableDisable() { /* Implement Zone 1 Enable/Disable Action */ }
+void zone1EnableDisable() {
+  pushMenu(currentMenu);
+  currentMenu = ENABLE_DISABLE_ZONE_1; // New menu state for Zone 1 Enable/Disable
+  currentIndex = 0;
+  }
 void zone2Location() { /* Implement Zone 2 Location Action */ }
-void zone2EnableDisable() { /* Implement Zone 2 Enable/Disable Action */ }
+void zone2EnableDisable() { 
+  pushMenu(currentMenu);
+  currentMenu = ENABLE_DISABLE_ZONE_2; // New menu state for Zone 2 Enable/Disable
+  currentIndex = 0;
+  }
 void zone3Location() { /* Implement Zone 3 Location Action */ }
-void zone3EnableDisable() { /* Implement Zone 3 Enable/Disable Action */ }
+void zone3EnableDisable() { 
+  pushMenu(currentMenu);
+  currentMenu = ENABLE_DISABLE_ZONE_3; // New menu state for Zone 2 Enable/Disable
+  currentIndex = 0;
+  }
 void zone4Location() { /* Implement Zone 4 Location Action */ }
-void zone4EnableDisable() { /* Implement Zone 4 Enable/Disable Action */ }
+void zone4EnableDisable() { 
+  pushMenu(currentMenu);
+  currentMenu = ENABLE_DISABLE_ZONE_4; // New menu state for Zone 2 Enable/Disable
+  currentIndex = 0;
+  }
+
+void enableZone1() { /* Logic for enabling Zone 1 */ }
+void disableZone1() { /* Logic for disabling Zone 1 */ }
+void enableZone2() { /* Logic for enabling Zone 2 */ }
+void disableZone2() { /* Logic for disabling Zone 2 */ }
+
+void enableZone3() { /* Logic for enabling Zone 1 */ }
+void disableZone3() { /* Logic for disabling Zone 1 */ }
+void enableZone4() { /* Logic for enabling Zone 2 */ }
+void disableZone4() { /* Logic for disabling Zone 2 */ }
+// ... and so on for other zones
+
 
 void navigateMenu(MenuItem* menuItems, int menuSize, char key) {
   if (key == 'B' && currentMenu == MAIN_MENU) {
@@ -448,6 +489,18 @@ void displayMenu(MenuItem* menuItems, int menuSize) {
             break;
         case OUTPUT_CONFIG:
             lcd.print("Output Config");
+            break;
+        case ENABLE_DISABLE_ZONE_1:
+            lcd.print("Zone 1 E/D");
+            break;
+        case ENABLE_DISABLE_ZONE_2:
+            lcd.print("Zone 2 E/D");
+            break;
+        case ENABLE_DISABLE_ZONE_3:
+            lcd.print("Zone 3 E/D");
+            break;
+        case ENABLE_DISABLE_ZONE_4:
+            lcd.print("Zone 4 E/D");
             break;
         // Add cases for other menus as needed
         // ...
@@ -557,14 +610,26 @@ void handleKeyPress(char key) {
     case ZONE_1:
       navigateMenu(zone1Items, zone1Size, key);
       break;
+    case ENABLE_DISABLE_ZONE_1:
+      navigateMenu(enableDisableZone1Items, enableDisableZone1Size, key);
+      break;
     case ZONE_2:
       navigateMenu(zone2Items, zone2Size, key);
+      break;
+    case ENABLE_DISABLE_ZONE_2:
+      navigateMenu(enableDisableZone2Items, enableDisableZone2Size, key);
       break;
     case ZONE_3:
       navigateMenu(zone3Items, zone3Size, key);
       break;
+    case ENABLE_DISABLE_ZONE_3:
+      navigateMenu(enableDisableZone3Items, enableDisableZone3Size, key);
+      break;
     case ZONE_4:
       navigateMenu(zone4Items, zone4Size, key);
+      break;
+    case ENABLE_DISABLE_ZONE_4:
+      navigateMenu(enableDisableZone4Items, enableDisableZone4Size, key);
       break;
     case PRESSURE_SWITCH_CONFIG:
       navigateMenu(pressureSwitchItems, pressureSwitchSize, key);
@@ -666,6 +731,19 @@ void updateDisplay() {
         lcd.setCursor(0, 0);
         lcd.print("No Alerts");
       }
+      break;
+
+    case ENABLE_DISABLE_ZONE_1:
+      displayMenu(enableDisableZone1Items, enableDisableZone1Size);
+      break;
+    case ENABLE_DISABLE_ZONE_2:
+      displayMenu(enableDisableZone2Items, enableDisableZone2Size);
+      break;
+    case ENABLE_DISABLE_ZONE_3:
+      displayMenu(enableDisableZone3Items, enableDisableZone3Size);
+      break;
+    case ENABLE_DISABLE_ZONE_4:
+      displayMenu(enableDisableZone4Items, enableDisableZone4Size);
       break;
     case MAIN_MENU:
       displayMenu(mainMenuItems, mainMenuSize);
