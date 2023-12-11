@@ -4,6 +4,7 @@
 #include <SPI.h>
 #include <SD.h>
 #include "RTClib.h"
+#include <EEPROM.h>
 
 const int ZONE1_ADC = A11;
 const int ZONE2_ADC = A12;
@@ -33,6 +34,8 @@ int RAC_RELEASE = 41;
 int PRE_RELEASE = 43;
 int SYSTEM_ON = 45;
 
+const int EEPROM_ADDR_ZONE1 = 10; // Example address for Zone 1
+const int EEPROM_ADDR_ZONE2 = 11; // Example address for Zone 2
 
 bool RAC_FAULT_ALERT = false;
 bool NAC_FAULT_ALERT = false;
@@ -40,6 +43,20 @@ bool BATTERY_FAULT_ALERT = false;
 bool RAC_RELEASE_ALERT = false;
 bool PRE_RELEASE_ALERT = false;
 bool SYSTEM_ON_ALERT = false;
+
+byte customChar[8] = {
+  B00000,
+  B00001,
+  B00011,
+  B10110,
+  B11100,
+  B01000,
+  B00000,
+  B00000
+};
+
+
+int stateZone1;
 
 #define MAX_ALERTS_DISPLAY 50 // Maximum number of alerts to display
 String alerts[MAX_ALERTS_DISPLAY];
@@ -90,15 +107,15 @@ char leftSection[] = "Z1:Nrml"; // Placeholder for left section content
 char rightSection[] = "Z2:Nrml"; // Placeholder for right section content
 char dateTime[] = "07/11/23 12:18"; // Placeholder for date and time
 
-enum MenuState { 
-    HOME_SCREEN, MAIN_MENU, INPUT_CONFIG, ZONE_SETTING, ZONE_1, ZONE_2, ZONE_3, ZONE_4, 
-    PRESSURE_SWITCH_CONFIG, RAC_1, RAC_2, 
-    OUTPUT_CONFIG, RAC_SETTING, RAC_1_SETTING, RAC_2_SETTING, 
-    NAC_SETTING, NAC_1_SETTING, NAC_2_SETTING, 
-    RELAY_SETTING, RELAY_1_SETTING, RELAY_2_SETTING,
-    TIMER_DELAY_SETTING, DATE_TIME_SETTING, AUTO_SILENCE_SETTING, 
-    CHIME_SETTING, PASSWORD_SETTING, PANEL_INFO_SETTING, 
-    HISTORY, FACTORY_RESET,ENABLE_DISABLE_ZONE_1,ENABLE_DISABLE_ZONE_2, ENABLE_DISABLE_ZONE_3, ENABLE_DISABLE_ZONE_4
+enum MenuState {
+  HOME_SCREEN, MAIN_MENU, INPUT_CONFIG, ZONE_SETTING, ZONE_1, ZONE_2, ZONE_3, ZONE_4,
+  PRESSURE_SWITCH_CONFIG, RAC_1, RAC_2,
+  OUTPUT_CONFIG, RAC_SETTING, RAC_1_SETTING, RAC_2_SETTING,
+  NAC_SETTING, NAC_1_SETTING, NAC_2_SETTING,
+  RELAY_SETTING, RELAY_1_SETTING, RELAY_2_SETTING,
+  TIMER_DELAY_SETTING, DATE_TIME_SETTING, AUTO_SILENCE_SETTING,
+  CHIME_SETTING, PASSWORD_SETTING, PANEL_INFO_SETTING,
+  HISTORY, FACTORY_RESET, ENABLE_DISABLE_ZONE_1, ENABLE_DISABLE_ZONE_2, ENABLE_DISABLE_ZONE_3, ENABLE_DISABLE_ZONE_4
 };
 
 MenuState currentMenu = MAIN_MENU;
@@ -206,23 +223,35 @@ void goToPressureSwitchConfig() {
   currentIndex = 0;
 }
 
-void goToRAC1() { pushMenu(currentMenu); currentMenu = RAC_1; currentIndex = 0; }
-void goToRAC2() { pushMenu(currentMenu); currentMenu = RAC_2; currentIndex = 0; }
-void rac1Switch() { /* Implement RAC 1 Switch Action */ }
-void rac2Switch() { /* Implement RAC 2 Switch Action */ }
+void goToRAC1() {
+  pushMenu(currentMenu);
+  currentMenu = RAC_1;
+  currentIndex = 0;
+}
+void goToRAC2() {
+  pushMenu(currentMenu);
+  currentMenu = RAC_2;
+  currentIndex = 0;
+}
+void rac1Switch() {
+  /* Implement RAC 1 Switch Action */
+}
+void rac2Switch() {
+  /* Implement RAC 2 Switch Action */
+}
 
 
 MenuItem mainMenuItems[] = {
-    {"Input Config", goToInputConfig}, 
-    {"Output Config", goToOutputConfig}, 
-    {"Timer/Delay Setting", goToTimerDelaySetting}, 
-    {"Date/Time Setting", goToDateTimeSetting}, 
-    {"Auto Silence Setting", goToAutoSilenceSetting}, 
-    {"Chime Setting", goToChimeSetting}, 
-    {"Password Setting", goToPasswordSetting}, 
-    {"Panel Info Setting", goToPanelInfoSetting}, 
-    {"History", goToHistory}, 
-    {"Factory Reset", goToFactoryReset}
+  {"Input Config", goToInputConfig},
+  {"Output Config", goToOutputConfig},
+  {"Timer/Delay Setting", goToTimerDelaySetting},
+  {"Date/Time Setting", goToDateTimeSetting},
+  {"Auto Silence Setting", goToAutoSilenceSetting},
+  {"Chime Setting", goToChimeSetting},
+  {"Password Setting", goToPasswordSetting},
+  {"Panel Info Setting", goToPanelInfoSetting},
+  {"History", goToHistory},
+  {"Factory Reset", goToFactoryReset}
 };
 MenuItem zoneSettingItems[] = {{"Zone 1", goToZone1}, {"Zone 2", goToZone2}, {"Zone 3", goToZone3}, {"Zone 4", goToZone4}};
 MenuItem zone1Items[] = {{"Location", zone1Location}, {"Enable/Disable", zone1EnableDisable}};
@@ -357,101 +386,203 @@ void goToRelaySetting() {
 }
 
 // Implement the action functions for new menu items
-void goToTimerDelaySetting() { /* Implement Action */ }
-void goToDateTimeSetting() { /* Implement Action */ }
-void goToAutoSilenceSetting() { /* Implement Action */ }
-void goToChimeSetting() { /* Implement Action */ }
-void goToPasswordSetting() { /* Implement Action */ }
-void goToPanelInfoSetting() { /* Implement Action */ }
-void goToHistory() { 
+void goToTimerDelaySetting() {
+  /* Implement Action */
+}
+void goToDateTimeSetting() {
+  /* Implement Action */
+}
+void goToAutoSilenceSetting() {
+  /* Implement Action */
+}
+void goToChimeSetting() {
+  /* Implement Action */
+}
+void goToPasswordSetting() {
+  /* Implement Action */
+}
+void goToPanelInfoSetting() {
+  /* Implement Action */
+}
+void goToHistory() {
   loadAlertsFromSD(); // Load the alerts from SD card
   strcpy(lastSelectedMenu, "History");
   pushMenu(currentMenu);
   currentMenu = HISTORY;
   currentIndex = 0;
-  }
-void goToFactoryReset() { /* Implement Action */ }
+}
+void goToFactoryReset() {
+  /* Implement Action */
+}
 
-void goToRelay1Setting() { pushMenu(currentMenu); currentMenu = RELAY_1_SETTING; currentIndex = 0; }
-void goToRelay2Setting() { pushMenu(currentMenu); currentMenu = RELAY_2_SETTING; currentIndex = 0; }
+void goToRelay1Setting() {
+  pushMenu(currentMenu);
+  currentMenu = RELAY_1_SETTING;
+  currentIndex = 0;
+}
+void goToRelay2Setting() {
+  pushMenu(currentMenu);
+  currentMenu = RELAY_2_SETTING;
+  currentIndex = 0;
+}
 
 // Implement the action functions for Relay 1 and Relay 2 Settings
-void relay1SettingZ1() { /* Implement Action */ }
-void relay1SettingZ2() { /* Implement Action */ }
-void relay1SettingZ1Z2() { /* Implement Action */ }
-void relay2SettingZ3() { /* Implement Action */ }
-void relay2SettingZ4() { /* Implement Action */ }
-void relay2SettingZ3Z4() { /* Implement Action */ }
+void relay1SettingZ1() {
+  /* Implement Action */
+}
+void relay1SettingZ2() {
+  /* Implement Action */
+}
+void relay1SettingZ1Z2() {
+  /* Implement Action */
+}
+void relay2SettingZ3() {
+  /* Implement Action */
+}
+void relay2SettingZ4() {
+  /* Implement Action */
+}
+void relay2SettingZ3Z4() {
+  /* Implement Action */
+}
 
 // Implement the action functions for NAC 2 Settings
-void nac2SettingRAC2() { /* Implement Action for NAC 2 - RAC 2 */ }
-void nac2SettingCommonNAC2() { /* Implement Action for NAC 2 - Common */ }
+void nac2SettingRAC2() {
+  /* Implement Action for NAC 2 - RAC 2 */
+}
+void nac2SettingCommonNAC2() {
+  /* Implement Action for NAC 2 - Common */
+}
 
 // Implement the action functions for NAC 1 Settings
-void nac1SettingRAC1() { /* Implement Action */ }
-void nac1SettingCommon() { /* Implement Action */ }
+void nac1SettingRAC1() {
+  /* Implement Action */
+}
+void nac1SettingCommon() {
+  /* Implement Action */
+}
 
 // Implement the action functions for RAC 2 Settings
-void rac2SettingZ3Z4() { /* Implement Action */ }
-void rac2SettingZ3orZ4() { /* Implement Action */ }
-void rac2SettingZ3() { /* Implement Action */ }
-void rac2SettingZ4() { /* Implement Action */ }
+void rac2SettingZ3Z4() {
+  /* Implement Action */
+}
+void rac2SettingZ3orZ4() {
+  /* Implement Action */
+}
+void rac2SettingZ3() {
+  /* Implement Action */
+}
+void rac2SettingZ4() {
+  /* Implement Action */
+}
 
 // Implement the action functions for RAC 1 Settings
-void rac1SettingZ1Z2() { /* Implement Action */ }
-void rac1SettingZ1orZ2() { /* Implement Action */ }
-void rac1SettingZ1() { /* Implement Action */ }
-void rac1SettingZ2() { /* Implement Action */ }
+void rac1SettingZ1Z2() {
+  /* Implement Action */
+}
+void rac1SettingZ1orZ2() {
+  /* Implement Action */
+}
+void rac1SettingZ1() {
+  /* Implement Action */
+}
+void rac1SettingZ2() {
+  /* Implement Action */
+}
 
-void goToZone1() { pushMenu(currentMenu); currentMenu = ZONE_1; currentIndex = 0; }
-void goToZone2() { pushMenu(currentMenu); currentMenu = ZONE_2; currentIndex = 0; }
-void goToZone3() { pushMenu(currentMenu); currentMenu = ZONE_3; currentIndex = 0; }
-void goToZone4() { pushMenu(currentMenu); currentMenu = ZONE_4; currentIndex = 0; }
+void goToZone1() {
+  pushMenu(currentMenu);
+  currentMenu = ZONE_1;
+  currentIndex = 0;
+}
+void goToZone2() {
+  pushMenu(currentMenu);
+  currentMenu = ZONE_2;
+  currentIndex = 0;
+}
+void goToZone3() {
+  pushMenu(currentMenu);
+  currentMenu = ZONE_3;
+  currentIndex = 0;
+}
+void goToZone4() {
+  pushMenu(currentMenu);
+  currentMenu = ZONE_4;
+  currentIndex = 0;
+}
 
-void zone1Location() { /* Implement Zone 1 Location Action */ }
+void zone1Location() {
+  /* Implement Zone 1 Location Action */
+}
 void zone1EnableDisable() {
   pushMenu(currentMenu);
   currentMenu = ENABLE_DISABLE_ZONE_1; // New menu state for Zone 1 Enable/Disable
   currentIndex = 0;
-  }
-void zone2Location() { /* Implement Zone 2 Location Action */ }
-void zone2EnableDisable() { 
+}
+void zone2Location() {
+  /* Implement Zone 2 Location Action */
+}
+void zone2EnableDisable() {
   pushMenu(currentMenu);
   currentMenu = ENABLE_DISABLE_ZONE_2; // New menu state for Zone 2 Enable/Disable
   currentIndex = 0;
-  }
-void zone3Location() { /* Implement Zone 3 Location Action */ }
-void zone3EnableDisable() { 
+}
+void zone3Location() {
+  /* Implement Zone 3 Location Action */
+}
+void zone3EnableDisable() {
   pushMenu(currentMenu);
   currentMenu = ENABLE_DISABLE_ZONE_3; // New menu state for Zone 2 Enable/Disable
   currentIndex = 0;
-  }
-void zone4Location() { /* Implement Zone 4 Location Action */ }
-void zone4EnableDisable() { 
+}
+void zone4Location() {
+  /* Implement Zone 4 Location Action */
+}
+void zone4EnableDisable() {
   pushMenu(currentMenu);
   currentMenu = ENABLE_DISABLE_ZONE_4; // New menu state for Zone 2 Enable/Disable
   currentIndex = 0;
-  }
+}
 
-void enableZone1() { /* Logic for enabling Zone 1 */ }
-void disableZone1() { /* Logic for disabling Zone 1 */ }
-void enableZone2() { /* Logic for enabling Zone 2 */ }
-void disableZone2() { /* Logic for disabling Zone 2 */ }
+void enableZone1() {
+  EEPROM.write(EEPROM_ADDR_ZONE1, 1);
+  stateZone1 = 1; // Update the current state variable
+  displayNeedsUpdate = true; // Flag to update the display
+}
+void disableZone1() {
+  EEPROM.write(EEPROM_ADDR_ZONE1, 0);
+  stateZone1 = 0; // Update the current state variable
+  displayNeedsUpdate = true; // Flag to update the display
+}
+void enableZone2() {
+  /* Logic for enabling Zone 2 */
+}
+void disableZone2() {
+  /* Logic for disabling Zone 2 */
+}
 
-void enableZone3() { /* Logic for enabling Zone 1 */ }
-void disableZone3() { /* Logic for disabling Zone 1 */ }
-void enableZone4() { /* Logic for enabling Zone 2 */ }
-void disableZone4() { /* Logic for disabling Zone 2 */ }
+void enableZone3() {
+  /* Logic for enabling Zone 1 */
+}
+void disableZone3() {
+  /* Logic for disabling Zone 1 */
+}
+void enableZone4() {
+  /* Logic for enabling Zone 2 */
+}
+void disableZone4() {
+  /* Logic for disabling Zone 2 */
+}
 // ... and so on for other zones
 
 
 void navigateMenu(MenuItem* menuItems, int menuSize, char key) {
   if (key == 'B' && currentMenu == MAIN_MENU) {
-        currentMenu = HOME_SCREEN;
-        updateDisplay();
-        return;
-    }
-    
+    currentMenu = HOME_SCREEN;
+    updateDisplay();
+    return;
+  }
+
   switch (key) {
     case '4': // Scroll Left
       if (currentIndex > 0) {
@@ -477,68 +608,68 @@ void navigateMenu(MenuItem* menuItems, int menuSize, char key) {
 
 
 void displayMenu(MenuItem* menuItems, int menuSize) {
-    lcd.clear();
+  lcd.clear();
 
-    // Dynamically display the name of the current menu on the first line
-    switch (currentMenu) {
-        case MAIN_MENU:
-            lcd.print("Main Menu");
-            break;
-        case INPUT_CONFIG:
-            lcd.print("Input Config");
-            break;
-        case OUTPUT_CONFIG:
-            lcd.print("Output Config");
-            break;
-        case ENABLE_DISABLE_ZONE_1:
-            lcd.print("Zone 1 E/D");
-            break;
-        case ENABLE_DISABLE_ZONE_2:
-            lcd.print("Zone 2 E/D");
-            break;
-        case ENABLE_DISABLE_ZONE_3:
-            lcd.print("Zone 3 E/D");
-            break;
-        case ENABLE_DISABLE_ZONE_4:
-            lcd.print("Zone 4 E/D");
-            break;
-        // Add cases for other menus as needed
-        // ...
-        default:
-            lcd.print("Menu"); // Fallback or generic title
-    }
+  // Dynamically display the name of the current menu on the first line
+  switch (currentMenu) {
+    case MAIN_MENU:
+      lcd.print("Main Menu");
+      break;
+    case INPUT_CONFIG:
+      lcd.print("Input Config");
+      break;
+    case OUTPUT_CONFIG:
+      lcd.print("Output Config");
+      break;
+    case ENABLE_DISABLE_ZONE_1:
+      lcd.print("Zone 1 E/D");
+      break;
+    case ENABLE_DISABLE_ZONE_2:
+      lcd.print("Zone 2 E/D");
+      break;
+    case ENABLE_DISABLE_ZONE_3:
+      lcd.print("Zone 3 E/D");
+      break;
+    case ENABLE_DISABLE_ZONE_4:
+      lcd.print("Zone 4 E/D");
+      break;
+    // Add cases for other menus as needed
+    // ...
+    default:
+      lcd.print("Menu"); // Fallback or generic title
+  }
 
-    // Second line: Display the current submenu item with conditional arrows
-    String secondLine = " ";  // Start with a space for alignment
-    int availableChars = 14; // 2 chars are reserved for '<' and '>'
+  // Second line: Display the current submenu item with conditional arrows
+  String secondLine = " ";  // Start with a space for alignment
+  int availableChars = 14; // 2 chars are reserved for '<' and '>'
 
-    // Add left arrow if not at the first item
-    if (currentIndex > 0) {
-        secondLine[0] = '<';
-    }
+  // Add left arrow if not at the first item
+  if (currentIndex > 0) {
+    secondLine[0] = '<';
+  }
 
-    String menuItem = menuItems[currentIndex].name;
-    // Truncate the menu item if it's too long
-    if (menuItem.length() > availableChars) {
-        menuItem = menuItem.substring(0, availableChars - 2) + "..";
-    }
-    secondLine += menuItem;
+  String menuItem = menuItems[currentIndex].name;
+  // Truncate the menu item if it's too long
+  if (menuItem.length() > availableChars) {
+    menuItem = menuItem.substring(0, availableChars - 2) + "..";
+  }
+  secondLine += menuItem;
 
-    // Pad with spaces to ensure right alignment
-    while (secondLine.length() < 15) {
-        secondLine += " ";
-    }
+  // Pad with spaces to ensure right alignment
+  while (secondLine.length() < 15) {
+    secondLine += " ";
+  }
 
-    // Add right arrow if not at the last item
-    if (currentIndex < menuSize - 1) {
-        secondLine += ">";
-    } else {
-        secondLine += " "; // Add space if no right arrow
-    }
+  // Add right arrow if not at the last item
+  if (currentIndex < menuSize - 1) {
+    secondLine += ">";
+  } else {
+    secondLine += " "; // Add space if no right arrow
+  }
 
-    // Display the scrollable item on the second line
-    lcd.setCursor(0, 1);
-    lcd.print(secondLine);
+  // Display the scrollable item on the second line
+  lcd.setCursor(0, 1);
+  lcd.print(secondLine);
 }
 
 
@@ -550,30 +681,30 @@ void handleKeyPress(char key) {
   }
 
   if (key != NO_KEY) {
-        beepBuzzer(); // Beep the buzzer on any keypress
-    }
-    
-  if (currentMenu == HOME_SCREEN && key == 'C') {
-        currentMenu = MAIN_MENU;
-        updateDisplay();
-        return;
-    }
+    beepBuzzer(); // Beep the buzzer on any keypress
+  }
 
-    if (key == '1') {
-        // Trigger "Alert Message 1"
-        isAlertActive = true;
-        strncpy(alertMessage, "Alert Message 1", sizeof(alertMessage));
-        alertStartTime = millis(); // Reset the timer for the buzzer
-    } else if (key == '2') {
-        // Trigger "Alert Message 2"
-        isAlertActive = true;
-        strncpy(alertMessage, "Alert Message 2", sizeof(alertMessage));
-        alertStartTime = millis(); // Reset the timer for the buzzer
-    } else if (key == '#') {
-        isAlertActive = false;
-        digitalWrite(buzzerPin, LOW);
-        alertMessage[0] = '\0'; 
-    }
+  if (currentMenu == HOME_SCREEN && key == 'C') {
+    currentMenu = MAIN_MENU;
+    updateDisplay();
+    return;
+  }
+
+  if (key == '1') {
+    // Trigger "Alert Message 1"
+    isAlertActive = true;
+    strncpy(alertMessage, "Alert Message 1", sizeof(alertMessage));
+    alertStartTime = millis(); // Reset the timer for the buzzer
+  } else if (key == '2') {
+    // Trigger "Alert Message 2"
+    isAlertActive = true;
+    strncpy(alertMessage, "Alert Message 2", sizeof(alertMessage));
+    alertStartTime = millis(); // Reset the timer for the buzzer
+  } else if (key == '#') {
+    isAlertActive = false;
+    digitalWrite(buzzerPin, LOW);
+    alertMessage[0] = '\0';
+  }
   switch (currentMenu) {
     case HISTORY:
       switch (key) {
@@ -670,7 +801,7 @@ void handleKeyPress(char key) {
     case RELAY_2_SETTING:
       navigateMenu(relay2SettingItems, relay2SettingSize, key);
       break;
-    // ... other cases
+      // ... other cases
   }
 }
 
@@ -685,8 +816,8 @@ void updateDisplay() {
     lcd.print(alertMessage); // Print the alert message
     return;
   }
-  
-    if (currentMenu == HOME_SCREEN) {
+
+  if (currentMenu == HOME_SCREEN) {
     unsigned long currentMillis = millis();
     static char dateTime[20] = "Loading..."; // Static variable to retain the value
 
@@ -704,10 +835,10 @@ void updateDisplay() {
     lcd.setCursor(0, 1); // Set cursor to the second line
     lcd.print(dateTime); // Print the date and time
     return;
-    }
+  }
 
-    
-    
+
+
   switch (currentMenu) {
     case HISTORY:
       // Display alert message and error number with date for History page
@@ -734,7 +865,7 @@ void updateDisplay() {
       break;
 
     case ENABLE_DISABLE_ZONE_1:
-      displayMenu(enableDisableZone1Items, enableDisableZone1Size);
+      displayEnableDisableMenu(enableDisableZone1Items, enableDisableZone1Size, stateZone1, currentIndex);
       break;
     case ENABLE_DISABLE_ZONE_2:
       displayMenu(enableDisableZone2Items, enableDisableZone2Size);
@@ -805,14 +936,62 @@ void updateDisplay() {
     case RELAY_2_SETTING:
       displayMenu(relay2SettingItems, relay2SettingSize);
       break;
-    // ... other cases
+      // ... other cases
   }
 }
 
+void displayEnableDisableMenu(MenuItem* menuItems, int menuSize, int zoneState, int currentIndex) {
+    lcd.clear();
+
+    // Determine the current zone based on the current menu
+    int currentZone = 0;
+    if (currentMenu == ENABLE_DISABLE_ZONE_1) {
+        currentZone = 1;
+    } else if (currentMenu == ENABLE_DISABLE_ZONE_2) {
+        currentZone = 2;
+    } else if (currentMenu == ENABLE_DISABLE_ZONE_3) {
+        currentZone = 3;
+    } else if (currentMenu == ENABLE_DISABLE_ZONE_4) {
+        currentZone = 4;
+    }
+
+    // Displaying the title on the first line
+    lcd.setCursor(0, 0);
+    lcd.print("Zone "); lcd.print(currentZone); lcd.print(" E/D");
+
+    // Preparing to display the current menu item on the second line
+    lcd.setCursor(0, 1); // Set cursor to the second line
+
+    // Navigation arrows and menu item
+    if (currentIndex > 0) {
+        lcd.print("<"); // Left arrow
+    } else {
+        lcd.print(" "); // Space for alignment
+    }
+
+    String itemName = menuItems[currentIndex].name;
+    lcd.print(itemName);
+
+    // Add a tick mark if the item is the current state
+    if ((strcmp(itemName.c_str(), "Enable") == 0 && zoneState == 1) ||
+        (strcmp(itemName.c_str(), "Disable") == 0 && zoneState == 0)) {
+        lcd.write(byte(0)); // Write the custom character (tick mark)
+    }
+
+    if (currentIndex < menuSize - 1) {
+        lcd.setCursor(15, 1); // Position cursor at the end of the line
+        lcd.print(">"); // Right arrow
+    }
+}
+
+
+
+
+
 void beepBuzzer() {
-    digitalWrite(buzzerPin, HIGH); // Turn buzzer on
-    delay(50); // Wait for 50 milliseconds
-    digitalWrite(buzzerPin, LOW); // Turn buzzer off
+  digitalWrite(buzzerPin, HIGH); // Turn buzzer on
+  delay(50); // Wait for 50 milliseconds
+  digitalWrite(buzzerPin, LOW); // Turn buzzer off
 }
 
 // Function to add an alert to the queue
@@ -826,7 +1005,7 @@ void enqueueAlert(const char* alert) {
         strncpy(alertMessage, alertQueue[alertQueueStart], sizeof(alertMessage));
         displayNeedsUpdate = true;
       }
-      
+
       // Get current time from RTC
       char timestamp[20];
       DateTime now = rtc.now();
@@ -906,90 +1085,90 @@ void hwMonitor() {
   }
 
   // Zone 2 Alert Monitoring
-    // ZONE2 : OPEN
-    if (ZONE2_ADC_value < 20) {
-        if (!zone2OpenAlert) {
-            zone2OpenAlert = true;
-            enqueueAlert("ZONE2 : OPEN");
-        }
-        digitalWrite(ZONE_2_OPEN, HIGH); // Turn ON ZONE2 OPEN LED
-    } else {
-        if (zone2OpenAlert) {
-            zone2OpenAlert = false;
-        }
-        digitalWrite(ZONE_2_OPEN, LOW); // Turn OFF ZONE2 OPEN LED
+  // ZONE2 : OPEN
+  if (ZONE2_ADC_value < 20) {
+    if (!zone2OpenAlert) {
+      zone2OpenAlert = true;
+      enqueueAlert("ZONE2 : OPEN");
     }
+    digitalWrite(ZONE_2_OPEN, HIGH); // Turn ON ZONE2 OPEN LED
+  } else {
+    if (zone2OpenAlert) {
+      zone2OpenAlert = false;
+    }
+    digitalWrite(ZONE_2_OPEN, LOW); // Turn OFF ZONE2 OPEN LED
+  }
 
-    // ZONE2 : FIRE
-    if (ZONE2_ADC_value >= 100 && ZONE2_ADC_value < 800) {
-        if (!zone2FireAlert) {
-            zone2FireAlert = true;
-            enqueueAlert("ZONE2 : FIRE");
-        }
-        digitalWrite(ZONE_2_FIRE, HIGH); // Turn ON ZONE2 FIRE LED
-    } else {
-        if (zone2FireAlert) {
-            zone2FireAlert = false;
-        }
-        digitalWrite(ZONE_2_FIRE, LOW); // Turn OFF ZONE2 FIRE LED
+  // ZONE2 : FIRE
+  if (ZONE2_ADC_value >= 100 && ZONE2_ADC_value < 800) {
+    if (!zone2FireAlert) {
+      zone2FireAlert = true;
+      enqueueAlert("ZONE2 : FIRE");
     }
+    digitalWrite(ZONE_2_FIRE, HIGH); // Turn ON ZONE2 FIRE LED
+  } else {
+    if (zone2FireAlert) {
+      zone2FireAlert = false;
+    }
+    digitalWrite(ZONE_2_FIRE, LOW); // Turn OFF ZONE2 FIRE LED
+  }
 
-    // ZONE2 : SHORT
-    if (ZONE2_ADC_value >= 800) {
-        if (!zone2ShortAlert) {
-            zone2ShortAlert = true;
-            enqueueAlert("ZONE2 : SHORT");
-        }
-        digitalWrite(ZONE_2_SHORT, HIGH); // Turn ON ZONE2 SHORT LED
-    } else {
-        if (zone2ShortAlert) {
-            zone2ShortAlert = false;
-        }
-        digitalWrite(ZONE_2_SHORT, LOW); // Turn OFF ZONE2 SHORT LED
+  // ZONE2 : SHORT
+  if (ZONE2_ADC_value >= 800) {
+    if (!zone2ShortAlert) {
+      zone2ShortAlert = true;
+      enqueueAlert("ZONE2 : SHORT");
     }
+    digitalWrite(ZONE_2_SHORT, HIGH); // Turn ON ZONE2 SHORT LED
+  } else {
+    if (zone2ShortAlert) {
+      zone2ShortAlert = false;
+    }
+    digitalWrite(ZONE_2_SHORT, LOW); // Turn OFF ZONE2 SHORT LED
+  }
 
-        // RAC Monitoring
-    if (RAC_ADC_value > 900) {
-        if (!RAC_FAULT_ALERT) {
-            RAC_FAULT_ALERT = true;
-            enqueueAlert("RAC : OPEN");
-        }
-        digitalWrite(RAC_FAULT, HIGH); // Turn ON RAC FAULT LED
-    } else if (RAC_ADC_value < 300) {
-        if (!RAC_FAULT_ALERT) {
-            RAC_FAULT_ALERT = true;
-            enqueueAlert("RAC : SHORT");
-        }
-        digitalWrite(RAC_FAULT, HIGH); // Turn ON RAC FAULT LED
-    } else {
-        if (RAC_FAULT_ALERT) {
-            RAC_FAULT_ALERT = false;
-            digitalWrite(RAC_FAULT, LOW); // Turn OFF RAC FAULT LED
-        }
+  // RAC Monitoring
+  if (RAC_ADC_value > 900) {
+    if (!RAC_FAULT_ALERT) {
+      RAC_FAULT_ALERT = true;
+      enqueueAlert("RAC : OPEN");
     }
+    digitalWrite(RAC_FAULT, HIGH); // Turn ON RAC FAULT LED
+  } else if (RAC_ADC_value < 300) {
+    if (!RAC_FAULT_ALERT) {
+      RAC_FAULT_ALERT = true;
+      enqueueAlert("RAC : SHORT");
+    }
+    digitalWrite(RAC_FAULT, HIGH); // Turn ON RAC FAULT LED
+  } else {
+    if (RAC_FAULT_ALERT) {
+      RAC_FAULT_ALERT = false;
+      digitalWrite(RAC_FAULT, LOW); // Turn OFF RAC FAULT LED
+    }
+  }
 
-    // NAC Monitoring
-    if (NAC_ADC_value > 900) {
-        if (!NAC_FAULT_ALERT) {
-            NAC_FAULT_ALERT = true;
-            enqueueAlert("NAC : OPEN");
-        }
-        digitalWrite(NAC_FAULT, HIGH); // Turn ON NAC FAULT LED
-    } else if (NAC_ADC_value < 300) {
-        if (!NAC_FAULT_ALERT) {
-            NAC_FAULT_ALERT = true;
-            enqueueAlert("NAC : SHORT");
-        }
-        digitalWrite(NAC_FAULT, HIGH); // Turn ON NAC FAULT LED
-    } else {
-        if (NAC_FAULT_ALERT) {
-            NAC_FAULT_ALERT = false;
-            digitalWrite(NAC_FAULT, LOW); // Turn OFF NAC FAULT LED
-        }
+  // NAC Monitoring
+  if (NAC_ADC_value > 900) {
+    if (!NAC_FAULT_ALERT) {
+      NAC_FAULT_ALERT = true;
+      enqueueAlert("NAC : OPEN");
     }
+    digitalWrite(NAC_FAULT, HIGH); // Turn ON NAC FAULT LED
+  } else if (NAC_ADC_value < 300) {
+    if (!NAC_FAULT_ALERT) {
+      NAC_FAULT_ALERT = true;
+      enqueueAlert("NAC : SHORT");
+    }
+    digitalWrite(NAC_FAULT, HIGH); // Turn ON NAC FAULT LED
+  } else {
+    if (NAC_FAULT_ALERT) {
+      NAC_FAULT_ALERT = false;
+      digitalWrite(NAC_FAULT, LOW); // Turn OFF NAC FAULT LED
+    }
+  }
 }
 
-void hwSetup(){
+void hwSetup() {
   pinMode(NAC_VCC, OUTPUT);
   digitalWrite(NAC_VCC, HIGH);
   pinMode(RAC_VCC, OUTPUT);
@@ -1048,7 +1227,7 @@ void loadAlertsFromSD() {
     while (myFile.available() && totalAlerts < MAX_ALERTS_DISPLAY) {
       alerts[totalAlerts++] = myFile.readStringUntil('\n');
     }
-    
+
     // Close the file
     myFile.close();
   } else {
@@ -1082,7 +1261,7 @@ void setup() {
   // LCD and keypad initialization (omitted for brevity)
   lcd.init();
   lcd.backlight();
-  pushMenu(currentMenu); // Initialize the menu history 
+  pushMenu(currentMenu); // Initialize the menu history
   currentMenu = HOME_SCREEN;
   updateDisplay(); // Initial display update
 
@@ -1109,13 +1288,16 @@ void setup() {
     // January 21, 2014 at 3am you would call:
     // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
   }
+  lcd.createChar(0, customChar);
+
+  stateZone1 = EEPROM.read(EEPROM_ADDR_ZONE1);
 }
 
 void loop() {
   char key = keypad.getKey();
   if (key) {
     handleKeyPress(key);
-//    updateDisplay();
+    //    updateDisplay();
     displayNeedsUpdate = true;
   }
 
