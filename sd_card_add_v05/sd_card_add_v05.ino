@@ -36,6 +36,8 @@ int SYSTEM_ON = 45;
 
 const int EEPROM_ADDR_ZONE1 = 10; // Example address for Zone 1
 const int EEPROM_ADDR_ZONE2 = 11; // Example address for Zone 2
+const int EEPROM_ADDR_ZONE3 = 13; // Example address for Zone 2
+const int EEPROM_ADDR_ZONE4 = 14; // Example address for Zone 2
 
 bool RAC_FAULT_ALERT = false;
 bool NAC_FAULT_ALERT = false;
@@ -57,6 +59,9 @@ byte customChar[8] = {
 
 
 int stateZone1;
+int stateZone2;
+int stateZone3;
+int stateZone4;
 
 #define MAX_ALERTS_DISPLAY 50 // Maximum number of alerts to display
 String alerts[MAX_ALERTS_DISPLAY];
@@ -555,22 +560,40 @@ void disableZone1() {
   displayNeedsUpdate = true; // Flag to update the display
 }
 void enableZone2() {
+  EEPROM.write(EEPROM_ADDR_ZONE2, 1);
+  stateZone2 = 1; // Update the current state variable
+  displayNeedsUpdate = true; // Flag to update the display
   /* Logic for enabling Zone 2 */
 }
 void disableZone2() {
+  EEPROM.write(EEPROM_ADDR_ZONE2, 0);
+  stateZone2 = 0; // Update the current state variable
+  displayNeedsUpdate = true; // Flag to update the display
   /* Logic for disabling Zone 2 */
 }
 
 void enableZone3() {
+  EEPROM.write(EEPROM_ADDR_ZONE3, 1);
+  stateZone3 = 1; // Update the current state variable
+  displayNeedsUpdate = true; // Flag to update the display
   /* Logic for enabling Zone 1 */
 }
 void disableZone3() {
+  EEPROM.write(EEPROM_ADDR_ZONE3, 0);
+  stateZone3 = 0; // Update the current state variable
+  displayNeedsUpdate = true; // Flag to update the display
   /* Logic for disabling Zone 1 */
 }
 void enableZone4() {
+  EEPROM.write(EEPROM_ADDR_ZONE4, 1);
+  stateZone4 = 1; // Update the current state variable
+  displayNeedsUpdate = true; // Flag to update the display
   /* Logic for enabling Zone 2 */
 }
 void disableZone4() {
+  EEPROM.write(EEPROM_ADDR_ZONE4, 0);
+  stateZone4 = 0; // Update the current state variable
+  displayNeedsUpdate = true; // Flag to update the display
   /* Logic for disabling Zone 2 */
 }
 // ... and so on for other zones
@@ -868,13 +891,13 @@ void updateDisplay() {
       displayEnableDisableMenu(enableDisableZone1Items, enableDisableZone1Size, stateZone1, currentIndex);
       break;
     case ENABLE_DISABLE_ZONE_2:
-      displayMenu(enableDisableZone2Items, enableDisableZone2Size);
+      displayEnableDisableMenu(enableDisableZone2Items, enableDisableZone2Size, stateZone2, currentIndex);
       break;
     case ENABLE_DISABLE_ZONE_3:
-      displayMenu(enableDisableZone3Items, enableDisableZone3Size);
+      displayEnableDisableMenu(enableDisableZone3Items, enableDisableZone3Size, stateZone3, currentIndex);
       break;
     case ENABLE_DISABLE_ZONE_4:
-      displayMenu(enableDisableZone4Items, enableDisableZone4Size);
+      displayEnableDisableMenu(enableDisableZone4Items, enableDisableZone4Size, stateZone4, currentIndex);
       break;
     case MAIN_MENU:
       displayMenu(mainMenuItems, mainMenuSize);
