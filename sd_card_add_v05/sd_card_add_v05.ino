@@ -1314,6 +1314,9 @@ void setup() {
   lcd.createChar(0, customChar);
 
   stateZone1 = EEPROM.read(EEPROM_ADDR_ZONE1);
+  stateZone2 = EEPROM.read(EEPROM_ADDR_ZONE2);
+  stateZone3 = EEPROM.read(EEPROM_ADDR_ZONE3);
+  stateZone4 = EEPROM.read(EEPROM_ADDR_ZONE4);
 }
 
 void loop() {
