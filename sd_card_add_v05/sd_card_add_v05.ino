@@ -38,6 +38,9 @@ const int EEPROM_ADDR_ZONE1 = 10; // Example address for Zone 1
 const int EEPROM_ADDR_ZONE2 = 11; // Example address for Zone 2
 const int EEPROM_ADDR_ZONE3 = 13; // Example address for Zone 2
 const int EEPROM_ADDR_ZONE4 = 14; // Example address for Zone 2
+const int EEPROM_ADDR_RAC1 = 15; // Example address for RAC 1
+const int EEPROM_ADDR_RAC2 = 16; // Example address for RAC 2
+
 
 bool RAC_FAULT_ALERT = false;
 bool NAC_FAULT_ALERT = false;
@@ -62,6 +65,9 @@ int stateZone1;
 int stateZone2;
 int stateZone3;
 int stateZone4;
+
+int stateRAC1; // 0 for Without SW, 1 for With SW
+int stateRAC2; // 0 for Without SW, 1 for With SW
 
 #define MAX_ALERTS_DISPLAY 50 // Maximum number of alerts to display
 String alerts[MAX_ALERTS_DISPLAY];
@@ -237,10 +243,26 @@ MenuItem rac2Items[] = {
 };
 const int rac2Size = sizeof(rac2Items) / sizeof(MenuItem);
 
-void goToRAC1With() { /* Implement RAC 1 With Action */ }
-void goToRAC1Without() { /* Implement RAC 1 Without Action */ }
-void goToRAC2With() { /* Implement RAC 2 With Action */ }
-void goToRAC2Without() { /* Implement RAC 2 Without Action */ }
+void goToRAC1With() { 
+  stateRAC1 = 1;
+  EEPROM.write(EEPROM_ADDR_RAC1, stateRAC1);
+  displayNeedsUpdate = true;
+  }
+void goToRAC1Without() { 
+  stateRAC1 = 0;
+  EEPROM.write(EEPROM_ADDR_RAC1, stateRAC1);
+  displayNeedsUpdate = true;
+ }
+void goToRAC2With() { 
+  stateRAC2 = 1;
+  EEPROM.write(EEPROM_ADDR_RAC2, stateRAC2);
+  displayNeedsUpdate = true;
+  }
+void goToRAC2Without() { 
+  stateRAC2 = 0;
+  EEPROM.write(EEPROM_ADDR_RAC2, stateRAC2);
+  displayNeedsUpdate = true;
+  }
 
 void goToPressureSwitchConfig() {
   pushMenu(currentMenu);
@@ -252,13 +274,11 @@ void goToRAC1() {
   pushMenu(currentMenu);
   currentMenu = RAC_1;
   currentIndex = 0;
-  displayMenu(rac1Items, rac1Size);
 }
 void goToRAC2() {
   pushMenu(currentMenu);
   currentMenu = RAC_2;
   currentIndex = 0;
-  displayMenu(rac2Items, rac2Size);
 }
 void rac1Switch() {
   /* Implement RAC 1 Switch Action */
@@ -916,16 +936,16 @@ void updateDisplay() {
       break;
 
     case ENABLE_DISABLE_ZONE_1:
-      displayEnableDisableMenu(enableDisableZone1Items, enableDisableZone1Size, stateZone1, currentIndex);
+      displayEnableDisableMenu(enableDisableZone1Items, enableDisableZone1Size, stateZone1, currentIndex, currentMenu);
       break;
     case ENABLE_DISABLE_ZONE_2:
-      displayEnableDisableMenu(enableDisableZone2Items, enableDisableZone2Size, stateZone2, currentIndex);
+      displayEnableDisableMenu(enableDisableZone2Items, enableDisableZone2Size, stateZone2, currentIndex, currentMenu);
       break;
     case ENABLE_DISABLE_ZONE_3:
-      displayEnableDisableMenu(enableDisableZone3Items, enableDisableZone3Size, stateZone3, currentIndex);
+      displayEnableDisableMenu(enableDisableZone3Items, enableDisableZone3Size, stateZone3, currentIndex, currentMenu);
       break;
     case ENABLE_DISABLE_ZONE_4:
-      displayEnableDisableMenu(enableDisableZone4Items, enableDisableZone4Size, stateZone4, currentIndex);
+      displayEnableDisableMenu(enableDisableZone4Items, enableDisableZone4Size, stateZone4, currentIndex, currentMenu);
       break;
     case MAIN_MENU:
       displayMenu(mainMenuItems, mainMenuSize);
@@ -952,10 +972,10 @@ void updateDisplay() {
       displayMenu(pressureSwitchItems, pressureSwitchSize);
       break;
     case RAC_1:
-      displayMenu(rac1Items, rac1Size);
+      displayEnableDisableMenu(rac1Items, rac1Size, stateRAC1, currentIndex, RAC_1);
       break;
     case RAC_2:
-      displayMenu(rac2Items, rac2Size);
+      displayEnableDisableMenu(rac2Items, rac2Size, stateRAC2, currentIndex, RAC_2);
       break;
     case OUTPUT_CONFIG:
       displayMenu(outputConfigItems, outputConfigSize);
@@ -991,24 +1011,24 @@ void updateDisplay() {
   }
 }
 
-void displayEnableDisableMenu(MenuItem* menuItems, int menuSize, int zoneState, int currentIndex) {
+void displayEnableDisableMenu(MenuItem* menuItems, int menuSize, int itemState, int currentIndex, MenuState menu) {
     lcd.clear();
 
-    // Determine the current zone based on the current menu
-    int currentZone = 0;
-    if (currentMenu == ENABLE_DISABLE_ZONE_1) {
-        currentZone = 1;
-    } else if (currentMenu == ENABLE_DISABLE_ZONE_2) {
-        currentZone = 2;
-    } else if (currentMenu == ENABLE_DISABLE_ZONE_3) {
-        currentZone = 3;
-    } else if (currentMenu == ENABLE_DISABLE_ZONE_4) {
-        currentZone = 4;
+    // Determine the current menu context (Zone or RAC)
+    String menuTitle;
+    if (menu >= ENABLE_DISABLE_ZONE_1 && menu <= ENABLE_DISABLE_ZONE_4) {
+        menuTitle = "Zone " + String(menu - ENABLE_DISABLE_ZONE_1 + 1) + " E/D";
+    } else if (menu == RAC_1) {
+        menuTitle = "RAC 1 Config";
+    } else if (menu == RAC_2) {
+        menuTitle = "RAC 2 Config";
+    } else {
+        menuTitle = "Menu"; // Default title
     }
 
     // Displaying the title on the first line
     lcd.setCursor(0, 0);
-    lcd.print("Zone "); lcd.print(currentZone); lcd.print(" E/D");
+    lcd.print(menuTitle);
 
     // Preparing to display the current menu item on the second line
     lcd.setCursor(0, 1); // Set cursor to the second line
@@ -1024,16 +1044,27 @@ void displayEnableDisableMenu(MenuItem* menuItems, int menuSize, int zoneState, 
     lcd.print(itemName);
 
     // Add a tick mark if the item is the current state
-    if ((strcmp(itemName.c_str(), "Enable") == 0 && zoneState == 1) ||
-        (strcmp(itemName.c_str(), "Disable") == 0 && zoneState == 0)) {
+    bool tickMark = false;
+    if (menu >= ENABLE_DISABLE_ZONE_1 && menu <= ENABLE_DISABLE_ZONE_4) {
+        tickMark = ((strcmp(itemName.c_str(), "Enable") == 0 && itemState == 1) ||
+                    (strcmp(itemName.c_str(), "Disable") == 0 && itemState == 0));
+    } else if (menu == RAC_1 || menu == RAC_2) {
+        tickMark = ((strcmp(itemName.c_str(), "With SW") == 0 && itemState == 1) ||
+                    (strcmp(itemName.c_str(), "Without SW") == 0 && itemState == 0));
+    }
+
+    if (tickMark) {
         lcd.write(byte(0)); // Write the custom character (tick mark)
     }
 
     if (currentIndex < menuSize - 1) {
         lcd.setCursor(15, 1); // Position cursor at the end of the line
         lcd.print(">"); // Right arrow
+    } else {
+        lcd.print(" "); // Add space if no right arrow
     }
 }
+
 
 
 
@@ -1345,6 +1376,8 @@ void setup() {
   stateZone2 = EEPROM.read(EEPROM_ADDR_ZONE2);
   stateZone3 = EEPROM.read(EEPROM_ADDR_ZONE3);
   stateZone4 = EEPROM.read(EEPROM_ADDR_ZONE4);
+  stateRAC1 = EEPROM.read(EEPROM_ADDR_RAC1);
+  stateRAC2 = EEPROM.read(EEPROM_ADDR_RAC2);
 }
 
 void loop() {
