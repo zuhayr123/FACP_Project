@@ -42,6 +42,9 @@ const int EEPROM_ADDR_RAC1 = 15; // Example address for RAC 1
 const int EEPROM_ADDR_RAC2 = 16; // Example address for RAC 2
 const int EEPROM_ADDR_RAC1_SETTING = 17; // EEPROM address for RAC 1 setting
 const int EEPROM_ADDR_RAC2_SETTING = 18; // EEPROM address for RAC 2 setting
+const int EEPROM_ADDR_NAC1_SETTING = 19; // EEPROM address for NAC 1 setting
+const int EEPROM_ADDR_NAC2_SETTING = 20; // EEPROM address for NAC 2 setting
+
 
 
 
@@ -58,6 +61,10 @@ const int RAC_SETTING_Z1_Z2 = 0;
 const int RAC_SETTING_Z1_OR_Z2 = 1;
 const int RAC_SETTING_Z1 = 2;
 const int RAC_SETTING_Z2 = 3;
+
+const int NAC_SETTING_RAC1 = 0;
+const int NAC_SETTING_COMMON = 1;
+const int NAC_SETTING_RAC2 = 2;
 
 
 byte customChar[8] = {
@@ -82,6 +89,10 @@ int stateRAC2; // 0 for Without SW, 1 for With SW
 
 int stateRAC1Setting;
 int stateRAC2Setting;
+
+// Variables to store the current state
+int stateNAC1Setting;
+int stateNAC2Setting;
 
 #define MAX_ALERTS_DISPLAY 50 // Maximum number of alerts to display
 String alerts[MAX_ALERTS_DISPLAY];
@@ -509,17 +520,29 @@ void relay2SettingZ3Z4() {
 
 // Implement the action functions for NAC 2 Settings
 void nac2SettingRAC2() {
+  stateNAC2Setting = NAC_SETTING_RAC2; // Assuming RAC 2 is an option for NAC 2
+  EEPROM.write(EEPROM_ADDR_NAC2_SETTING, stateNAC2Setting);
+  displayNeedsUpdate = true;
   /* Implement Action for NAC 2 - RAC 2 */
 }
 void nac2SettingCommonNAC2() {
+  stateNAC2Setting = NAC_SETTING_COMMON;
+  EEPROM.write(EEPROM_ADDR_NAC2_SETTING, stateNAC2Setting);
+  displayNeedsUpdate = true;
   /* Implement Action for NAC 2 - Common */
 }
 
 // Implement the action functions for NAC 1 Settings
 void nac1SettingRAC1() {
+  stateNAC1Setting = NAC_SETTING_RAC1;
+  EEPROM.write(EEPROM_ADDR_NAC1_SETTING, stateNAC1Setting);
+  displayNeedsUpdate = true;
   /* Implement Action */
 }
 void nac1SettingCommon() {
+  stateNAC1Setting = NAC_SETTING_COMMON;
+  EEPROM.write(EEPROM_ADDR_NAC1_SETTING, stateNAC1Setting);
+  displayNeedsUpdate = true;
   /* Implement Action */
 }
 
@@ -1031,10 +1054,10 @@ void updateDisplay() {
       displayMenu(nacSettingItems, nacSettingSize);
       break;
     case NAC_1_SETTING:
-      displayMenu(nac1SettingItems, nac1SettingSize);
+      displayNACOptionMenu(nac1SettingItems, nac1SettingSize, stateNAC1Setting, currentIndex, NAC_1_SETTING);
       break;
     case NAC_2_SETTING:
-      displayMenu(nac2SettingItems, nac2SettingSize);
+      displayNACOptionMenu(nac2SettingItems, nac2SettingSize, stateNAC2Setting, currentIndex, NAC_2_SETTING);
       break;
     case RELAY_SETTING:
       displayMenu(relaySettingItems, relaySettingSize);
@@ -1047,6 +1070,47 @@ void updateDisplay() {
       break;
       // ... other cases
   }
+}
+
+void displayNACOptionMenu(MenuItem* menuItems, int menuSize, int itemState, int currentIndex, MenuState menu) {
+    lcd.clear();
+
+    // Determine the current menu context
+    String menuTitle;
+    if (menu == NAC_1_SETTING || menu == NAC_2_SETTING) {
+        menuTitle = (menu == NAC_1_SETTING) ? "NAC 1 Setting" : "NAC 2 Setting";
+    } else {
+        menuTitle = "Menu"; // Default title for other menus
+    }
+
+    // Displaying the title on the first line
+    lcd.setCursor(0, 0);
+    lcd.print(menuTitle);
+
+    // Preparing to display the current menu item on the second line
+    lcd.setCursor(0, 1); // Set cursor to the second line
+
+    // Navigation arrows and menu item
+    if (currentIndex > 0) {
+        lcd.print("<"); // Left arrow
+    } else {
+        lcd.print(" "); // Space for alignment
+    }
+
+    String itemName = menuItems[currentIndex].name;
+    lcd.print(itemName);
+
+    // Add a tick mark if the item is the current state
+    bool tickMark = (currentIndex == itemState);
+
+    if (tickMark) {
+        lcd.write(byte(0)); // Write the custom character (tick mark)
+    } else if (currentIndex < menuSize - 1) {
+        lcd.setCursor(15, 1); // Position cursor at the end for the right arrow
+        lcd.print(">"); 
+    } else {
+        lcd.print(" "); // Add space if no right arrow or tick mark
+    }
 }
 
 void displayMultiOptionMenu(MenuItem* menuItems, int menuSize, int itemState, int currentIndex, MenuState menu) {
@@ -1455,6 +1519,8 @@ void setup() {
   stateRAC2 = EEPROM.read(EEPROM_ADDR_RAC2);
   stateRAC1Setting = EEPROM.read(EEPROM_ADDR_RAC1_SETTING);
   stateRAC2Setting = EEPROM.read(EEPROM_ADDR_RAC2_SETTING);
+  stateNAC1Setting = EEPROM.read(EEPROM_ADDR_NAC1_SETTING);
+  stateNAC2Setting = EEPROM.read(EEPROM_ADDR_NAC2_SETTING);
 }
 
 void loop() {
