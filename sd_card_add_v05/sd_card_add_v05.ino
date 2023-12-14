@@ -120,7 +120,8 @@ enum MenuState {
   RELAY_SETTING, RELAY_1_SETTING, RELAY_2_SETTING,
   TIMER_DELAY_SETTING, DATE_TIME_SETTING, AUTO_SILENCE_SETTING,
   CHIME_SETTING, PASSWORD_SETTING, PANEL_INFO_SETTING,
-  HISTORY, FACTORY_RESET, ENABLE_DISABLE_ZONE_1, ENABLE_DISABLE_ZONE_2, ENABLE_DISABLE_ZONE_3, ENABLE_DISABLE_ZONE_4
+  HISTORY, FACTORY_RESET, ENABLE_DISABLE_ZONE_1, ENABLE_DISABLE_ZONE_2, ENABLE_DISABLE_ZONE_3, ENABLE_DISABLE_ZONE_4,
+  RAC_1_WITH, RAC_1_WITHOUT, RAC_2_WITH, RAC_2_WITHOUT
 };
 
 MenuState currentMenu = MAIN_MENU;
@@ -210,6 +211,12 @@ void goToPanelInfoSetting();
 void goToHistory();
 void goToFactoryReset();
 
+// Forward declarations for new menu actions
+void goToRAC1With();
+void goToRAC1Without();
+void goToRAC2With();
+void goToRAC2Without();
+
 // Extend the inputConfigItems array
 MenuItem inputConfigItems[] = {{"Zone Setting", goToZoneSetting}, {"Pressure Switch Config", goToPressureSwitchConfig}};
 const int inputConfigSize = sizeof(inputConfigItems) / sizeof(MenuItem);
@@ -217,10 +224,23 @@ const int inputConfigSize = sizeof(inputConfigItems) / sizeof(MenuItem);
 MenuItem pressureSwitchItems[] = {{"RAC 1", goToRAC1}, {"RAC 2", goToRAC2}};
 const int pressureSwitchSize = sizeof(pressureSwitchItems) / sizeof(MenuItem);
 
-MenuItem rac1Items[] = {{"With/Without SW", rac1Switch}};
-MenuItem rac2Items[] = {{"With/Without SW", rac2Switch}};
+// Modify the rac1Items and rac2Items to include the new menu options
+MenuItem rac1Items[] = {
+  {"With SW", goToRAC1With}, 
+  {"Without SW", goToRAC1Without}
+};
 const int rac1Size = sizeof(rac1Items) / sizeof(MenuItem);
+
+MenuItem rac2Items[] = {
+  {"With SW", goToRAC2With}, 
+  {"Without SW", goToRAC2Without}
+};
 const int rac2Size = sizeof(rac2Items) / sizeof(MenuItem);
+
+void goToRAC1With() { /* Implement RAC 1 With Action */ }
+void goToRAC1Without() { /* Implement RAC 1 Without Action */ }
+void goToRAC2With() { /* Implement RAC 2 With Action */ }
+void goToRAC2Without() { /* Implement RAC 2 Without Action */ }
 
 void goToPressureSwitchConfig() {
   pushMenu(currentMenu);
@@ -232,11 +252,13 @@ void goToRAC1() {
   pushMenu(currentMenu);
   currentMenu = RAC_1;
   currentIndex = 0;
+  displayMenu(rac1Items, rac1Size);
 }
 void goToRAC2() {
   pushMenu(currentMenu);
   currentMenu = RAC_2;
   currentIndex = 0;
+  displayMenu(rac2Items, rac2Size);
 }
 void rac1Switch() {
   /* Implement RAC 1 Switch Action */
@@ -655,6 +677,12 @@ void displayMenu(MenuItem* menuItems, int menuSize) {
       break;
     case ENABLE_DISABLE_ZONE_4:
       lcd.print("Zone 4 E/D");
+      break;
+    case RAC_1:
+      lcd.print("RAC 1");
+      break;
+    case RAC_2:
+      lcd.print("RAC 2");
       break;
     // Add cases for other menus as needed
     // ...
