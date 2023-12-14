@@ -1098,8 +1098,10 @@ void displayEnableDisableMenu(MenuItem* menuItems, int menuSize, int itemState, 
     String menuTitle;
     if (menu >= ENABLE_DISABLE_ZONE_1 && menu <= ENABLE_DISABLE_ZONE_4) {
         menuTitle = "Zone " + String(menu - ENABLE_DISABLE_ZONE_1 + 1) + " E/D";
-    } else if (menu == RAC_1 || menu == RAC_2) {
-        menuTitle = (menu == RAC_1) ? "RAC 1 Config" : "RAC 2 Config";
+    } else if (menu == RAC_1) {
+        menuTitle = "RAC 1 Config";
+    } else if (menu == RAC_2) {
+        menuTitle = "RAC 2 Config";
     } else {
         menuTitle = "Menu"; // Default title
     }
@@ -1127,16 +1129,19 @@ void displayEnableDisableMenu(MenuItem* menuItems, int menuSize, int itemState, 
         tickMark = ((strcmp(itemName.c_str(), "Enable") == 0 && itemState == 1) ||
                     (strcmp(itemName.c_str(), "Disable") == 0 && itemState == 0));
     } else if (menu == RAC_1 || menu == RAC_2) {
-        tickMark = (currentIndex == itemState);
+        tickMark = ((strcmp(itemName.c_str(), "With SW") == 0 && itemState == 1) ||
+                    (strcmp(itemName.c_str(), "Without SW") == 0 && itemState == 0));
     }
 
     if (tickMark) {
         lcd.write(byte(0)); // Write the custom character (tick mark)
-    } else if (currentIndex < menuSize - 1) {
-        lcd.setCursor(15, 1); // Position cursor at the end for the right arrow
-        lcd.print(">"); 
+    }
+
+    if (currentIndex < menuSize - 1) {
+        lcd.setCursor(15, 1); // Position cursor at the end of the line
+        lcd.print(">"); // Right arrow
     } else {
-        lcd.print(" "); // Add space if no right arrow or tick mark
+        lcd.print(" "); // Add space if no right arrow
     }
 }
 
