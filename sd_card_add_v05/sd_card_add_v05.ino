@@ -47,6 +47,7 @@ const int EEPROM_ADDR_NAC2_SETTING = 20; // EEPROM address for NAC 2 setting
 // EEPROM Addresses
 const int EEPROM_ADDR_RELAY1_SETTING = 21; // Example address for Relay 1 setting
 const int EEPROM_ADDR_RELAY2_SETTING = 22; // Example address for Relay 2 setting
+const int EEPROM_ADDR_MANUAL_RELEASE = 23; // Example address, ensure it doesn't conflict with existing addresses
 
 
 
@@ -167,12 +168,13 @@ enum MenuState {
   TIMER_DELAY_SETTING, DATE_TIME_SETTING, AUTO_SILENCE_SETTING,
   CHIME_SETTING, PASSWORD_SETTING, PANEL_INFO_SETTING,
   HISTORY, FACTORY_RESET, ENABLE_DISABLE_ZONE_1, ENABLE_DISABLE_ZONE_2, ENABLE_DISABLE_ZONE_3, ENABLE_DISABLE_ZONE_4,
-  RAC_1_WITH, RAC_1_WITHOUT, RAC_2_WITH, RAC_2_WITHOUT
+  RAC_1_WITH, RAC_1_WITHOUT, RAC_2_WITH, RAC_2_WITHOUT,MANUAL_RELEASE_VALUE
 };
 
 MenuState currentMenu = MAIN_MENU;
 
 int currentIndex = 0; // Current index in the menu
+int manualReleaseValue = 0;
 
 const int maxMenuDepth = 10; // Maximum depth of menu navigation
 MenuState menuHistory[maxMenuDepth];
@@ -269,6 +271,8 @@ void goToRAC1Without();
 void goToRAC2With();
 void goToRAC2Without();
 
+void goToManualReleaseValue();
+
 // Extend the inputConfigItems array
 MenuItem inputConfigItems[] = {{"Zone Setting", goToZoneSetting}, {"Pressure Switch Config", goToPressureSwitchConfig}};
 const int inputConfigSize = sizeof(inputConfigItems) / sizeof(MenuItem);
@@ -318,6 +322,14 @@ void goToRAC2Without() {
   EEPROM.write(EEPROM_ADDR_RAC2, stateRAC2);
   displayNeedsUpdate = true;
   }
+
+
+void goToManualReleaseValue() {
+    pushMenu(currentMenu);
+    currentMenu = MANUAL_RELEASE_VALUE;
+    currentIndex = 0; // Not needed for value setting, but for consistency
+    displayNeedsUpdate = true;
+}
 
 void goToPressureSwitchConfig() {
   pushMenu(currentMenu);
@@ -491,6 +503,7 @@ void goToTimerDelaySetting() {
 }
 
 void goToManualRelease() {
+  goToManualReleaseValue();
   // Implement logic for Manual Release
 }
 
@@ -1003,6 +1016,33 @@ void handleKeyPress(char key) {
     case TIMER_DELAY_SETTING:
       navigateMenu(timerDelayItems, timerDelaySize, key);
       break;
+    case MANUAL_RELEASE_VALUE:
+      if (key == '3' && manualReleaseValue < 255) {
+        manualReleaseValue++;
+        displayNeedsUpdate = true;
+      } else if (key == '9' && manualReleaseValue > 0) {
+        manualReleaseValue--;
+        displayNeedsUpdate = true;
+      } else if (key == 'A') {
+        EEPROM.write(EEPROM_ADDR_MANUAL_RELEASE, manualReleaseValue);
+        // Update display to show check mark
+        lcd.clear();
+        lcd.print("Manual Rel Time");
+        lcd.setCursor(0, 1); // Move to the second line
+        lcd.print(manualReleaseValue);
+        lcd.print("s");
+        lcd.write(byte(0)); // Display the check mark
+        delay(1000); // Display check mark for 1 second
+
+        displayNeedsUpdate = true;
+      }
+      else if (key == 'B') {
+        // Go back to the previous menu
+        currentMenu = TIMER_DELAY_SETTING; // or whatever the parent menu is
+        currentIndex = 0; // Reset index if necessary
+        displayNeedsUpdate = true;
+      }
+      break;
       // ... other cases
   }
 }
@@ -1037,6 +1077,16 @@ void updateDisplay() {
     lcd.setCursor(0, 1); // Set cursor to the second line
     lcd.print(dateTime); // Print the date and time
     return;
+  }
+
+  if (currentMenu == MANUAL_RELEASE_VALUE) {
+    lcd.clear();
+    lcd.setCursor(0, 0); // Set cursor to the beginning of the first line
+    lcd.print("Manual Rel Time");
+
+    lcd.setCursor(0, 1); // Set cursor to the beginning of the second line
+    lcd.print(manualReleaseValue);
+    lcd.print("s"); // Adding the suffix "s"
   }
 
 
@@ -1623,6 +1673,7 @@ void setup() {
 
   stateRelay1Setting = EEPROM.read(EEPROM_ADDR_RELAY1_SETTING);
   stateRelay2Setting = EEPROM.read(EEPROM_ADDR_RELAY2_SETTING);
+  manualReleaseValue = EEPROM.read(EEPROM_ADDR_MANUAL_RELEASE);
 }
 
 void loop() {
