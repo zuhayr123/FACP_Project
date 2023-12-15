@@ -249,6 +249,12 @@ void relay2SettingZ3Z4();
 
 // Forward declarations for new action functions
 void goToTimerDelaySetting();
+void goToManualRelease();
+void goToPreRelease();
+void goToRACOff();
+void goToNACOff();
+
+
 void goToDateTimeSetting();
 void goToAutoSilenceSetting();
 void goToChimeSetting();
@@ -269,6 +275,15 @@ const int inputConfigSize = sizeof(inputConfigItems) / sizeof(MenuItem);
 
 MenuItem pressureSwitchItems[] = {{"RAC 1", goToRAC1}, {"RAC 2", goToRAC2}};
 const int pressureSwitchSize = sizeof(pressureSwitchItems) / sizeof(MenuItem);
+
+MenuItem timerDelayItems[] = {
+  {"Manual Release", goToManualRelease},
+  {"Pre Release", goToPreRelease},
+  {"RAC Off", goToRACOff},
+  {"NAC Off", goToNACOff}
+};
+const int timerDelaySize = sizeof(timerDelayItems) / sizeof(MenuItem);
+
 
 // Modify the rac1Items and rac2Items to include the new menu options
 MenuItem rac1Items[] = {
@@ -319,12 +334,6 @@ void goToRAC2() {
   pushMenu(currentMenu);
   currentMenu = RAC_2;
   currentIndex = 0;
-}
-void rac1Switch() {
-  /* Implement RAC 1 Switch Action */
-}
-void rac2Switch() {
-  /* Implement RAC 2 Switch Action */
 }
 
 
@@ -474,8 +483,30 @@ void goToRelaySetting() {
 
 // Implement the action functions for new menu items
 void goToTimerDelaySetting() {
+  strcpy(lastSelectedMenu, "Timer/Delay Setting");
+  pushMenu(currentMenu);
+  currentMenu = TIMER_DELAY_SETTING;
+  currentIndex = 0;
   /* Implement Action */
 }
+
+void goToManualRelease() {
+  // Implement logic for Manual Release
+}
+
+void goToPreRelease() {
+  // Implement logic for Pre Release
+}
+
+void goToRACOff() {
+  // Implement logic for RAC Off
+}
+
+void goToNACOff() {
+  // Implement logic for NAC Off
+}
+
+
 void goToDateTimeSetting() {
   /* Implement Action */
 }
@@ -798,6 +829,9 @@ void displayMenu(MenuItem* menuItems, int menuSize) {
     case RAC_2:
       lcd.print("RAC 2");
       break;
+    case TIMER_DELAY_SETTING:
+      lcd.print("Timer/Delay");
+      break;
     // Add cases for other menus as needed
     // ...
     default:
@@ -966,6 +1000,9 @@ void handleKeyPress(char key) {
     case RELAY_2_SETTING:
       navigateMenu(relay2SettingItems, relay2SettingSize, key);
       break;
+    case TIMER_DELAY_SETTING:
+      navigateMenu(timerDelayItems, timerDelaySize, key);
+      break;
       // ... other cases
   }
 }
@@ -1100,6 +1137,10 @@ void updateDisplay() {
       break;
     case RELAY_2_SETTING:
       displayMultiOptionMenu(relay2SettingItems, relay2SettingSize, stateRelay2Setting, currentIndex, RELAY_2_SETTING);
+      break;
+    case TIMER_DELAY_SETTING:
+      // Assuming you have a similar structure for timer/delay menu items
+      displayMenu(timerDelayItems, timerDelaySize);
       break;
       // ... other cases
   }
