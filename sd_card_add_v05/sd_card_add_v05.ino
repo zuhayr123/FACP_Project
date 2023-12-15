@@ -48,6 +48,9 @@ const int EEPROM_ADDR_NAC2_SETTING = 20; // EEPROM address for NAC 2 setting
 const int EEPROM_ADDR_RELAY1_SETTING = 21; // Example address for Relay 1 setting
 const int EEPROM_ADDR_RELAY2_SETTING = 22; // Example address for Relay 2 setting
 const int EEPROM_ADDR_MANUAL_RELEASE = 23; // Example address, ensure it doesn't conflict with existing addresses
+const int EEPROM_ADDR_PRE_RELEASE = 24;
+const int EEPROM_ADDR_RAC_OFF = 25;
+const int EEPROM_ADDR_NAC_OFF = 26;
 
 
 
@@ -90,6 +93,10 @@ byte customChar[8] = {
   B00000
 };
 
+int manualReleaseValue = 0;
+int preReleaseValue = 0;
+int racOffValue = 0;
+int nacOffValue = 0;
 
 int stateZone1;
 int stateZone2;
@@ -168,13 +175,12 @@ enum MenuState {
   TIMER_DELAY_SETTING, DATE_TIME_SETTING, AUTO_SILENCE_SETTING,
   CHIME_SETTING, PASSWORD_SETTING, PANEL_INFO_SETTING,
   HISTORY, FACTORY_RESET, ENABLE_DISABLE_ZONE_1, ENABLE_DISABLE_ZONE_2, ENABLE_DISABLE_ZONE_3, ENABLE_DISABLE_ZONE_4,
-  RAC_1_WITH, RAC_1_WITHOUT, RAC_2_WITH, RAC_2_WITHOUT,MANUAL_RELEASE_VALUE
+  RAC_1_WITH, RAC_1_WITHOUT, RAC_2_WITH, RAC_2_WITHOUT,MANUAL_RELEASE_VALUE,PRE_RELEASE_VALUE, RAC_OFF_VALUE, NAC_OFF_VALUE
 };
 
 MenuState currentMenu = MAIN_MENU;
 
 int currentIndex = 0; // Current index in the menu
-int manualReleaseValue = 0;
 
 const int maxMenuDepth = 10; // Maximum depth of menu navigation
 MenuState menuHistory[maxMenuDepth];
@@ -272,6 +278,9 @@ void goToRAC2With();
 void goToRAC2Without();
 
 void goToManualReleaseValue();
+void goToPreReleaseValue();
+void goToNACOffValue();
+void goToRACOffValue();
 
 // Extend the inputConfigItems array
 MenuItem inputConfigItems[] = {{"Zone Setting", goToZoneSetting}, {"Pressure Switch Config", goToPressureSwitchConfig}};
@@ -327,6 +336,27 @@ void goToRAC2Without() {
 void goToManualReleaseValue() {
     pushMenu(currentMenu);
     currentMenu = MANUAL_RELEASE_VALUE;
+    currentIndex = 0; // Not needed for value setting, but for consistency
+    displayNeedsUpdate = true;
+}
+
+void goToPreReleaseValue() {
+    pushMenu(currentMenu);
+    currentMenu = PRE_RELEASE_VALUE;
+    currentIndex = 0; // Not needed for value setting, but for consistency
+    displayNeedsUpdate = true;
+}
+
+void goToRACOffValue() {
+    pushMenu(currentMenu);
+    currentMenu = RAC_OFF_VALUE;
+    currentIndex = 0; // Not needed for value setting, but for consistency
+    displayNeedsUpdate = true;
+}
+
+void goToNACOffValue() {
+    pushMenu(currentMenu);
+    currentMenu = NAC_OFF_VALUE;
     currentIndex = 0; // Not needed for value setting, but for consistency
     displayNeedsUpdate = true;
 }
@@ -508,14 +538,17 @@ void goToManualRelease() {
 }
 
 void goToPreRelease() {
+  goToPreReleaseValue();
   // Implement logic for Pre Release
 }
 
 void goToRACOff() {
+  goToRACOffValue();
   // Implement logic for RAC Off
 }
 
 void goToNACOff() {
+  goToNACOffValue();
   // Implement logic for NAC Off
 }
 
@@ -1043,6 +1076,90 @@ void handleKeyPress(char key) {
         displayNeedsUpdate = true;
       }
       break;
+
+    case PRE_RELEASE_VALUE:
+      if (key == '3' && preReleaseValue < 255) {
+        preReleaseValue++;
+        displayNeedsUpdate = true;
+      } else if (key == '9' && preReleaseValue > 0) {
+        preReleaseValue--;
+        displayNeedsUpdate = true;
+      } else if (key == 'A') {
+        EEPROM.write(EEPROM_ADDR_PRE_RELEASE, preReleaseValue);
+        // Update display to show check mark
+        lcd.clear();
+        lcd.print("Pre Rel Time");
+        lcd.setCursor(0, 1); // Move to the second line
+        lcd.print(preReleaseValue);
+        lcd.print("s");
+        lcd.write(byte(0)); // Display the check mark
+        delay(1000); // Display check mark for 1 second
+
+        displayNeedsUpdate = true;
+      }
+      else if (key == 'B') {
+        // Go back to the previous menu
+        currentMenu = TIMER_DELAY_SETTING; // or whatever the parent menu is
+        currentIndex = 0; // Reset index if necessary
+        displayNeedsUpdate = true;
+      }
+      break;
+
+    case RAC_OFF_VALUE:
+      if (key == '3' && racOffValue < 255) {
+        racOffValue++;
+        displayNeedsUpdate = true;
+      } else if (key == '9' && racOffValue > 0) {
+        racOffValue--;
+        displayNeedsUpdate = true;
+      } else if (key == 'A') {
+        EEPROM.write(EEPROM_ADDR_RAC_OFF, racOffValue);
+        // Update display to show check mark
+        lcd.clear();
+        lcd.print("RAC Off Time");
+        lcd.setCursor(0, 1); // Move to the second line
+        lcd.print(racOffValue);
+        lcd.print("s");
+        lcd.write(byte(0)); // Display the check mark
+        delay(1000); // Display check mark for 1 second
+
+        displayNeedsUpdate = true;
+      }
+      else if (key == 'B') {
+        // Go back to the previous menu
+        currentMenu = TIMER_DELAY_SETTING; // or whatever the parent menu is
+        currentIndex = 0; // Reset index if necessary
+        displayNeedsUpdate = true;
+      }
+      break;
+
+    case NAC_OFF_VALUE:
+      if (key == '3' && nacOffValue < 255) {
+        nacOffValue++;
+        displayNeedsUpdate = true;
+      } else if (key == '9' && nacOffValue > 0) {
+        nacOffValue--;
+        displayNeedsUpdate = true;
+      } else if (key == 'A') {
+        EEPROM.write(EEPROM_ADDR_NAC_OFF, nacOffValue);
+        // Update display to show check mark
+        lcd.clear();
+        lcd.print("NAC Off Time");
+        lcd.setCursor(0, 1); // Move to the second line
+        lcd.print(nacOffValue);
+        lcd.print("s");
+        lcd.write(byte(0)); // Display the check mark
+        delay(1000); // Display check mark for 1 second
+
+        displayNeedsUpdate = true;
+      }
+      else if (key == 'B') {
+        // Go back to the previous menu
+        currentMenu = TIMER_DELAY_SETTING; // or whatever the parent menu is
+        currentIndex = 0; // Reset index if necessary
+        displayNeedsUpdate = true;
+      }
+      break;
       // ... other cases
   }
 }
@@ -1089,7 +1206,35 @@ void updateDisplay() {
     lcd.print("s"); // Adding the suffix "s"
   }
 
+  if (currentMenu == PRE_RELEASE_VALUE) {
+    lcd.clear();
+    lcd.setCursor(0, 0); // Set cursor to the beginning of the first line
+    lcd.print("Pre Rel Time");
 
+    lcd.setCursor(0, 1); // Set cursor to the beginning of the second line
+    lcd.print(preReleaseValue);
+    lcd.print("s"); // Adding the suffix "s"
+  }
+
+  if (currentMenu == RAC_OFF_VALUE) {
+    lcd.clear();
+    lcd.setCursor(0, 0); // Set cursor to the beginning of the first line
+    lcd.print("RAC Off Time");
+
+    lcd.setCursor(0, 1); // Set cursor to the beginning of the second line
+    lcd.print(racOffValue);
+    lcd.print("s"); // Adding the suffix "s"
+  }
+
+  if (currentMenu == NAC_OFF_VALUE) {
+    lcd.clear();
+    lcd.setCursor(0, 0); // Set cursor to the beginning of the first line
+    lcd.print("NAC Off Time");
+
+    lcd.setCursor(0, 1); // Set cursor to the beginning of the second line
+    lcd.print(nacOffValue);
+    lcd.print("s"); // Adding the suffix "s"
+  }
 
   switch (currentMenu) {
     case HISTORY:
@@ -1673,7 +1818,11 @@ void setup() {
 
   stateRelay1Setting = EEPROM.read(EEPROM_ADDR_RELAY1_SETTING);
   stateRelay2Setting = EEPROM.read(EEPROM_ADDR_RELAY2_SETTING);
+  
   manualReleaseValue = EEPROM.read(EEPROM_ADDR_MANUAL_RELEASE);
+  preReleaseValue = EEPROM.read(EEPROM_ADDR_PRE_RELEASE);
+  racOffValue = EEPROM.read(EEPROM_ADDR_RAC_OFF);
+  nacOffValue = EEPROM.read(EEPROM_ADDR_NAC_OFF);
 }
 
 void loop() {
